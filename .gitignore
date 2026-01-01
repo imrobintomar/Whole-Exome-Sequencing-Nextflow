@@ -1,0 +1,22 @@
+# Nextflow temporary files
+.nextflow/
+.nextflow.log*
+work/
+.vincent/
+
+# Results and output directories
+results/
+output/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
