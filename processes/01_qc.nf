@@ -2,7 +2,7 @@ process fastpQC {
     input:
         tuple val(sample_id), path(reads)
     output:
-        tuple val(sample_id), path("*_1_filtered.fastq.gz"), path("*_2_filtered.fastq.gz")
+        tuple val(sample_id), path("${sample_id}_1_filtered.fastq.gz"), path("${sample_id}_2_filtered.fastq.gz")
     script:
         """
         fastp -i ${reads[0]} -I ${reads[1]} \\

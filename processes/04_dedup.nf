@@ -7,7 +7,7 @@ process markDuplicates {
     tag "$sample_id"
 
     input:
-        tuple val(sample_id), path(bam_file)
+        tuple val(sample_id), path(bam_file), path(bam_index)
 
     output:
         tuple val(sample_id), path("${sample_id}_markdup.bam")
@@ -38,5 +38,7 @@ process sortSamPostDedup {
             -O ${sample_id}_markdup.sorted.bam \
             -SO coordinate \
             --CREATE_INDEX true
+
+        mv ${sample_id}_markdup.sorted.bai ${sample_id}_markdup.sorted.bam.bai
         """
 }

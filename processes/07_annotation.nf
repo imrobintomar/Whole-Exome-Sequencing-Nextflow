@@ -19,7 +19,7 @@ process snpsiftAnnotate1000G {
         fi
 
         # Annotate with 1000 Genomes data
-        for chr in {1..22} X; do
+        for chr in {1..22} X Y; do
             vcf_file="${params.thousand_genomes_dir}/filtered_chr\${chr}.vcf"
             if [[ -f "\${vcf_file}" ]] || [[ -f "\${vcf_file}.gz" ]]; then
                 java -jar ${params.snpsift_jar} annotate \\
@@ -31,9 +31,8 @@ process snpsiftAnnotate1000G {
             fi
         done
 
-        # Compress and index output
+        # Compress output (no need to index as annovar doesn't require it)
         bgzip -c \${vcf_temp} > ${sample_id}_1000genome.vcf.gz
-        tabix -p vcf ${sample_id}_1000genome.vcf.gz
         """
 }
 

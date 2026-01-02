@@ -3,7 +3,7 @@ process baseRecalibrator {
     tag "$sample_id"
 
     input:
-        tuple val(sample_id), path(bam_file)
+        tuple val(sample_id), path(bam_file), path(bam_index)
 
     output:
         tuple val(sample_id), path("${sample_id}_recall.table")
@@ -27,11 +27,11 @@ process applyBQSR {
     tag "$sample_id"
 
     input:
-        tuple val(sample_id), path(bam_file)
+        tuple val(sample_id), path(bam_file), path(bam_index)
         tuple val(sample_id), path(recal_table)
 
     output:
-        tuple val(sample_id), path("${sample_id}_recall.bam")
+        tuple val(sample_id), path("${sample_id}_recall.bam"), path("${sample_id}_recall.bam.bai")
 
     script:
         """
@@ -39,6 +39,12 @@ process applyBQSR {
             -R ${params.reference} \
             -I ${bam_file} \
             --bqsr-recal-file ${recal_table} \
-            -O ${sample_id}_recall.bam
+            -O ${sample_id}_recall.bam \
+            --create-output-bam-index true
+
+        # Ensure index has correct name
+        if [ -f ${sample_id}_recall.bai ]; then
+            mv ${sample_id}_recall.bai ${sample_id}_recall.bam.bai
+        fi
         """
 }

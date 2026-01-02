@@ -20,6 +20,8 @@ process sortSam {
             -O ${sample_id}.sorted.bam \
             -SO coordinate \
             --CREATE_INDEX true
+
+        mv ${sample_id}.sorted.bai ${sample_id}.sorted.bam.bai
         """
 }
 
@@ -28,7 +30,7 @@ process flagstat {
     tag "$sample_id"
 
     input:
-        tuple val(sample_id), path(bam_file)
+        tuple val(sample_id), path(bam_file), path(bam_index)
 
     output:
         path("${sample_id}.Stat.txt")
