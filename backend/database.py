@@ -36,6 +36,7 @@ class Job(Base):
     user_id = Column(Integer, index=True)
     sample_name = Column(String)
     status = Column(SQLEnum(JobStatus), default=JobStatus.PENDING)
+    current_step = Column(String, nullable=True)
 
     fastq_r1_path = Column(String)
     fastq_r2_path = Column(String)

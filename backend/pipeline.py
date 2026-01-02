@@ -27,12 +27,40 @@ class PipelineRunner:
 
         return input_dir, self.job_dir / "output"
 
+    def update_pipeline_step(self, step: str):
+        """Update the current pipeline step in the database"""
+        self.job.current_step = step
+        self.db.commit()
+
+    def parse_nextflow_output(self, line: str) -> Optional[str]:
+        """Parse Nextflow output to identify current step"""
+        step_keywords = {
+            'fastpQC': 'Quality Control',
+            'bwaMem': 'Alignment',
+            'sortSam': 'Sorting',
+            'flagstat': 'Quality Statistics',
+            'markDuplicates': 'Deduplication',
+            'sortSamPostDedup': 'Post-dedup Sorting',
+            'baseRecalibrator': 'Base Recalibration',
+            'applyBQSR': 'Applying BQSR',
+            'haplotypeCaller': 'Variant Calling',
+            'snpsiftAnnotate1000G': '1000 Genomes Annotation',
+            'annovarAnnotate': 'ANNOVAR Annotation',
+            'extractFilterFields': 'Filtering & Extraction'
+        }
+
+        for keyword, step_name in step_keywords.items():
+            if keyword in line:
+                return step_name
+        return None
+
     def run_pipeline(self):
         """Execute Nextflow pipeline"""
         try:
             # Update job status to running
             self.job.status = JobStatus.RUNNING
             self.job.started_at = datetime.utcnow()
+            self.job.current_step = "Initializing"
             self.db.commit()
 
             # Prepare directories
@@ -47,21 +75,33 @@ class PipelineRunner:
                 "-resume"
             ]
 
-            # Run pipeline
+            # Run pipeline with real-time output monitoring
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
             )
 
-            stdout, stderr = process.communicate()
+            output_lines = []
+            # Monitor output in real-time
+            for line in iter(process.stdout.readline, ''):
+                if line:
+                    output_lines.append(line)
+                    # Try to detect current step from output
+                    step = self.parse_nextflow_output(line)
+                    if step:
+                        self.update_pipeline_step(step)
+
+            process.wait()
+            full_output = ''.join(output_lines)
 
             # Check if pipeline completed successfully
             if process.returncode == 0:
                 self.update_job_success(output_dir)
             else:
-                self.update_job_failed(stderr)
+                self.update_job_failed(full_output)
 
         except Exception as e:
             self.update_job_failed(str(e))
@@ -77,6 +117,7 @@ class PipelineRunner:
         filtered_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}*_filtered.tsv")
 
         self.job.status = JobStatus.COMPLETED
+        self.job.current_step = "Completed"
         self.job.completed_at = datetime.utcnow()
         self.job.bam_path = str(bam_file) if bam_file else None
         self.job.raw_vcf_path = str(raw_vcf) if raw_vcf else None
@@ -90,6 +131,9 @@ class PipelineRunner:
         self.job.status = JobStatus.FAILED
         self.job.completed_at = datetime.utcnow()
         self.job.error_message = error_message[:500]
+        # Keep current_step if set, otherwise set to "Initializing"
+        if not self.job.current_step:
+            self.job.current_step = "Initializing"
         self.db.commit()
 
     @staticmethod

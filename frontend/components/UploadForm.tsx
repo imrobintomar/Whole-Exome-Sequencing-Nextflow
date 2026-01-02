@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { jobApi } from '@/lib/api';
-import { Upload, FileText, Loader } from 'lucide-react';
+import { Upload, FileText, Loader, CheckCircle2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Button } from './ui/button';
 
 interface UploadFormProps {
   onJobSubmitted: () => void;
@@ -86,143 +90,174 @@ export default function UploadForm({ onJobSubmitted }: UploadFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Submit New Analysis
-      </h2>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Submit New Analysis</h2>
+        <p className="text-muted-foreground">
+          Upload your paired-end FASTQ files for whole exome sequencing analysis
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Sample Name
-          </label>
-          <input
-            type="text"
-            value={sampleName}
-            onChange={(e) => setSampleName(e.target.value)}
-            placeholder="e.g., Sample001"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
-            disabled={uploading}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            FASTQ R1 File (paired-end read 1)
-          </label>
-          <div
-            {...dropzoneR1.getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
-              uploading
-                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                : dropzoneR1.isDragActive
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-400'
-            }`}
-          >
-            <input {...dropzoneR1.getInputProps()} disabled={uploading} />
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            {fastqR1 ? (
-              <div className="space-y-1">
-                <div className="flex items-center justify-center space-x-2">
-                  <FileText className="h-5 w-5 text-green-500" />
-                  <p className="text-sm text-gray-700">{fastqR1.name}</p>
-                </div>
-                <p className="text-xs text-gray-500">{formatFileSize(fastqR1.size)}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                Drop R1 FASTQ file here or click to browse
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            FASTQ R2 File (paired-end read 2)
-          </label>
-          <div
-            {...dropzoneR2.getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition ${
-              uploading
-                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                : dropzoneR2.isDragActive
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-300 hover:border-blue-400'
-            }`}
-          >
-            <input {...dropzoneR2.getInputProps()} disabled={uploading} />
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            {fastqR2 ? (
-              <div className="space-y-1">
-                <div className="flex items-center justify-center space-x-2">
-                  <FileText className="h-5 w-5 text-green-500" />
-                  <p className="text-sm text-gray-700">{fastqR2.name}</p>
-                </div>
-                <p className="text-xs text-gray-500">{formatFileSize(fastqR2.size)}</p>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                Drop R2 FASTQ file here or click to browse
-              </p>
-            )}
-          </div>
-        </div>
-
-        {uploading && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <Loader className="h-5 w-5 text-blue-600 animate-spin" />
-                <span className="text-sm font-medium text-blue-800">
-                  Uploading files...
-                </span>
-              </div>
-              <span className="text-sm font-semibold text-blue-600">
-                {uploadProgress}%
-              </span>
+      <Card className="max-w-3xl">
+        <CardHeader>
+          <CardTitle>Sample Information</CardTitle>
+          <CardDescription>
+            Provide a unique name for your sample and upload the paired FASTQ files
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="sampleName">Sample Name</Label>
+              <Input
+                id="sampleName"
+                type="text"
+                value={sampleName}
+                onChange={(e) => setSampleName(e.target.value)}
+                placeholder="e.g., Sample001"
+                required
+                disabled={uploading}
+              />
             </div>
-            <div className="w-full bg-blue-200 rounded-full h-2.5">
+
+            <div className="space-y-2">
+              <Label>FASTQ R1 File (paired-end read 1)</Label>
               <div
-                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
+                {...dropzoneR1.getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  uploading
+                    ? 'border-muted bg-muted/10 cursor-not-allowed'
+                    : dropzoneR1.isDragActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-accent/50'
+                }`}
+              >
+                <input {...dropzoneR1.getInputProps()} disabled={uploading} />
+                {fastqR1 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="font-medium">{fastqR1.name}</p>
+                    <p className="text-sm text-muted-foreground">{formatFileSize(fastqR1.size)}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Drop R1 FASTQ file here or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Accepts .gz, .fastq.gz, .fq.gz files
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-blue-600 mt-2">
-              Please wait while your files are being uploaded...
-            </p>
-          </div>
-        )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
+            <div className="space-y-2">
+              <Label>FASTQ R2 File (paired-end read 2)</Label>
+              <div
+                {...dropzoneR2.getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                  uploading
+                    ? 'border-muted bg-muted/10 cursor-not-allowed'
+                    : dropzoneR2.isDragActive
+                    ? 'border-primary bg-primary/5'
+                    : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-accent/50'
+                }`}
+              >
+                <input {...dropzoneR2.getInputProps()} disabled={uploading} />
+                {fastqR2 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <FileText className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="font-medium">{fastqR2.name}</p>
+                    <p className="text-sm text-muted-foreground">{formatFileSize(fastqR2.size)}</p>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Drop R2 FASTQ file here or click to browse
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Accepts .gz, .fastq.gz, .fq.gz files
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
 
-        {success && (
-          <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-lg text-sm">
-            {success}
-          </div>
-        )}
+            {uploading && (
+              <Card className="border-primary/50 bg-primary/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Loader className="h-5 w-5 text-primary animate-spin" />
+                      <span className="text-sm font-medium">
+                        Uploading files...
+                      </span>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">
+                      {uploadProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2.5">
+                    <div
+                      className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Please wait while your files are being uploaded...
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
-        <button
-          type="submit"
-          disabled={uploading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition flex items-center justify-center space-x-2"
-        >
-          {uploading ? (
-            <>
-              <Loader className="h-5 w-5 animate-spin" />
-              <span>Uploading {uploadProgress}%...</span>
-            </>
-          ) : (
-            <span>Submit Analysis</span>
-          )}
-        </button>
-      </form>
+            {error && (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-destructive">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {success && (
+              <Card className="border-green-500/50 bg-green-500/5">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <p className="text-sm text-green-600">{success}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Button
+              type="submit"
+              disabled={uploading}
+              className="w-full h-11"
+            >
+              {uploading ? (
+                <>
+                  <Loader className="mr-2 h-5 w-5 animate-spin" />
+                  Uploading {uploadProgress}%...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-5 w-5" />
+                  Submit Analysis
+                </>
+              )}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -30,6 +30,7 @@ class JobResponse(BaseModel):
     job_id: str
     sample_name: str
     status: JobStatus
+    current_step: Optional[str] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

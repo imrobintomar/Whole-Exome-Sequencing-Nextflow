@@ -3,7 +3,19 @@
 import { useEffect, useState } from 'react';
 import { jobApi, Job } from '@/lib/api';
 import { format } from 'date-fns';
-import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from './ui/table';
+import PipelineProgress from './PipelineProgress';
 
 export default function JobList() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -41,126 +53,140 @@ export default function JobList() {
     }
   };
 
-  const getStatusBadge = (status: Job['status']) => {
-    const badges = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      running: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      failed: 'bg-red-100 text-red-800',
+  const getStatusBadgeVariant = (status: Job['status']) => {
+    const variants: Record<Job['status'], 'pending' | 'success' | 'destructive' | 'secondary'> = {
+      pending: 'pending',
+      running: 'secondary',
+      completed: 'success',
+      failed: 'destructive',
     };
-    return badges[status];
+    return variants[status];
   };
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-xl p-8 text-center">
-        <Loader className="h-8 w-8 text-blue-500 animate-spin mx-auto mb-4" />
-        <p className="text-gray-600">Loading jobs...</p>
+      <div className="flex items-center justify-center py-12">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-xl p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">My Jobs</h2>
-        <button
-          onClick={fetchJobs}
-          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Refresh</span>
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">My Jobs</h2>
+          <p className="text-muted-foreground">
+            Track and manage your sequencing pipeline jobs
+          </p>
+        </div>
+        <Button onClick={fetchJobs} variant="outline">
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Refresh
+        </Button>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">
-          {error}
-        </div>
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="pt-6">
+            <p className="text-sm text-destructive">{error}</p>
+          </CardContent>
+        </Card>
       )}
 
-      {jobs.length === 0 ? (
-        <p className="text-center text-gray-500 py-8">
-          No jobs submitted yet. Upload files to get started!
-        </p>
-      ) : (
-        <div className="space-y-4">
-          {jobs.map((job) => (
-            <div
-              key={job.job_id}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    {getStatusIcon(job.status)}
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {job.sample_name}
-                    </h3>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(
-                        job.status
-                      )}`}
-                    >
-                      {job.status.toUpperCase()}
-                    </span>
-                  </div>
-
-                  <p className="text-sm text-gray-500 mb-1">
-                    Job ID: {job.job_id}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    Submitted: {format(new Date(job.created_at), 'PPpp')}
-                  </p>
-                  {job.completed_at && (
-                    <p className="text-sm text-gray-500">
-                      Completed: {format(new Date(job.completed_at), 'PPpp')}
-                    </p>
-                  )}
-                  {job.error_message && (
-                    <p className="text-sm text-red-600 mt-2">
-                      Error: {job.error_message}
-                    </p>
-                  )}
-                </div>
-
-                {job.status === 'completed' && (
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={() => jobApi.downloadFile(job.job_id, 'bam')}
-                      className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>BAM</span>
-                    </button>
-                    <button
-                      onClick={() => jobApi.downloadFile(job.job_id, 'raw_vcf')}
-                      className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Raw VCF</span>
-                    </button>
-                    <button
-                      onClick={() => jobApi.downloadFile(job.job_id, 'annotated_vcf')}
-                      className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Annotated VCF</span>
-                    </button>
-                    <button
-                      onClick={() => jobApi.downloadFile(job.job_id, 'filtered_tsv')}
-                      className="flex items-center space-x-2 px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition"
-                    >
-                      <Download className="h-4 w-4" />
-                      <span>Filtered TSV</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>All Jobs</CardTitle>
+          <CardDescription>
+            View all your submitted pipeline jobs and download results
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {jobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Dna className="mb-4 h-12 w-12 text-muted-foreground" />
+              <p className="text-muted-foreground">
+                No jobs submitted yet. Upload files to get started!
+              </p>
             </div>
-          ))}
-        </div>
-      )}
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Sample Name</TableHead>
+                  <TableHead>Pipeline Progress</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {jobs.map((job) => (
+                  <TableRow key={job.job_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(job.status)}
+                        <Badge variant={getStatusBadgeVariant(job.status)}>
+                          {job.status}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{job.sample_name}</TableCell>
+                    <TableCell>
+                      <PipelineProgress job={job} />
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {format(new Date(job.created_at), 'PPp')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {job.status === 'completed' ? (
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            onClick={() => jobApi.downloadFile(job.job_id, 'bam')}
+                            className="h-8 px-2"
+                          >
+                            <Download className="mr-1 h-3 w-3" />
+                            BAM
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => jobApi.downloadFile(job.job_id, 'raw_vcf')}
+                            className="h-8 px-2"
+                          >
+                            <Download className="mr-1 h-3 w-3" />
+                            VCF
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => jobApi.downloadFile(job.job_id, 'annotated_vcf')}
+                            className="h-8 px-2"
+                          >
+                            <Download className="mr-1 h-3 w-3" />
+                            Annotated
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => jobApi.downloadFile(job.job_id, 'filtered_tsv')}
+                            className="h-8 px-2"
+                          >
+                            <Download className="mr-1 h-3 w-3" />
+                            TSV
+                          </Button>
+                        </div>
+                      ) : job.error_message ? (
+                        <p className="text-xs text-destructive">{job.error_message}</p>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Processing...</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

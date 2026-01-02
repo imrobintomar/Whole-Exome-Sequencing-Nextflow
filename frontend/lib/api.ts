@@ -28,6 +28,7 @@ export interface Job {
   job_id: string;
   sample_name: string;
   status: 'pending' | 'running' | 'completed' | 'failed';
+  current_step?: string;
   created_at: string;
   started_at?: string;
   completed_at?: string;
@@ -93,5 +94,11 @@ export const jobApi = {
     window.open(`${API_URL}/jobs/${jobId}/download/${fileType}`, '_blank');
   },
 };
+
+// Convenience exports for direct access
+export const getJobs = jobApi.getJobs;
+export const getJob = jobApi.getJob;
+export const submitJob = jobApi.submitJob;
+export const downloadFile = jobApi.downloadFile;
 
 export default api;
