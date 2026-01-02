@@ -93,3 +93,9 @@ results/
 # Nextflow
 # --------------------
 .nextflow*
+# AI / tooling metadata
+.claude/
+.vincent/
+
+# FUSE temporary files
+.fuse_hidden*
