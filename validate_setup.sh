@@ -1,5 +1,6 @@
 #!/bin/bash
-
+#!/usr/bin/env bash
+source ~/.bashrc
 # =============================================================================
 # WES Pipeline Pre-flight Validation Script
 # =============================================================================
@@ -11,6 +12,11 @@ set -e  # Exit on error
 
 ERRORS=0
 WARNINGS=0
+#!/usr/bin/env bash
+set -e
+
+export GATK_HOME=/media/drprabudh/m2/tools/gatk-4.6.2.0
+export PATH="$GATK_HOME:$PATH"
 
 echo "╔══════════════════════════════════════════════════════════════╗"
 echo "║   WES Pipeline Configuration Validation                     ║"

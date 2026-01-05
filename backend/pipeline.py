@@ -1,6 +1,7 @@
 import subprocess
 import os
 import shutil
+import signal
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -84,6 +85,10 @@ class PipelineRunner:
                 bufsize=1
             )
 
+            # Store process ID for cancellation
+            self.job.process_id = process.pid
+            self.db.commit()
+
             output_lines = []
             # Monitor output in real-time
             for line in iter(process.stdout.readline, ''):
@@ -111,14 +116,15 @@ class PipelineRunner:
         sample = self.job.sample_name
 
         # Find output files
-        bam_file = self.find_file(output_dir / "Mapsam", f"{sample}*_recal.bam")
-        raw_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}*.vcf.gz")
-        annotated_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}*_annovar_annotated.vcf")
-        filtered_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}*_filtered.tsv")
+        bam_file = self.find_file(output_dir / "Mapsam", f"{sample}_recall.bam")
+        raw_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}.vcf.gz")
+        annotated_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}.annovar.hg38_multianno.vcf")
+        filtered_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}_final_annotated.tsv")
 
         self.job.status = JobStatus.COMPLETED
         self.job.current_step = "Completed"
         self.job.completed_at = datetime.utcnow()
+        self.job.process_id = None  # Clear process ID
         self.job.bam_path = str(bam_file) if bam_file else None
         self.job.raw_vcf_path = str(raw_vcf) if raw_vcf else None
         self.job.annotated_vcf_path = str(annotated_vcf) if annotated_vcf else None
@@ -130,6 +136,7 @@ class PipelineRunner:
         """Update job status to failed"""
         self.job.status = JobStatus.FAILED
         self.job.completed_at = datetime.utcnow()
+        self.job.process_id = None  # Clear process ID
         self.job.error_message = error_message[:500]
         # Keep current_step if set, otherwise set to "Initializing"
         if not self.job.current_step:
@@ -143,6 +150,70 @@ class PipelineRunner:
             return None
         files = list(directory.glob(pattern))
         return files[0] if files else None
+
+    def cancel_pipeline(self):
+        """Cancel a running pipeline"""
+        if not self.job.process_id:
+            raise ValueError("No process ID found for this job")
+
+        if self.job.status not in [JobStatus.RUNNING, JobStatus.PENDING]:
+            raise ValueError(f"Cannot cancel job with status: {self.job.status}")
+
+        try:
+            # Kill the process and its children
+            os.killpg(os.getpgid(self.job.process_id), signal.SIGTERM)
+
+            # Update job status
+            self.job.status = JobStatus.FAILED
+            self.job.error_message = "Pipeline cancelled by user"
+            self.job.completed_at = datetime.utcnow()
+            self.job.process_id = None
+            self.db.commit()
+
+            return True
+        except ProcessLookupError:
+            # Process already finished
+            self.job.process_id = None
+            self.db.commit()
+            return False
+        except Exception as e:
+            raise Exception(f"Failed to cancel pipeline: {str(e)}")
+
+    def rerun_pipeline(self):
+        """Rerun a pipeline from scratch"""
+        # Reset job status
+        self.job.status = JobStatus.PENDING
+        self.job.current_step = None
+        self.job.started_at = None
+        self.job.completed_at = None
+        self.job.error_message = None
+        self.job.process_id = None
+        self.job.bam_path = None
+        self.job.raw_vcf_path = None
+        self.job.annotated_vcf_path = None
+        self.job.filtered_tsv_path = None
+        self.db.commit()
+
+        # Clean up old output directory
+        if self.job_dir.exists():
+            shutil.rmtree(self.job_dir)
+
+        # Run pipeline
+        self.run_pipeline()
+
+    def resume_pipeline(self):
+        """Resume a failed pipeline using Nextflow -resume"""
+        if self.job.status not in [JobStatus.FAILED]:
+            raise ValueError(f"Can only resume failed jobs, current status: {self.job.status}")
+
+        # Update status to running
+        self.job.status = JobStatus.RUNNING
+        self.job.started_at = datetime.utcnow()
+        self.job.error_message = None
+        self.db.commit()
+
+        # Run pipeline (already has -resume flag in run_pipeline)
+        self.run_pipeline()
 
 def run_job_async(job_id: str, db: Session):
     """Run pipeline job asynchronously"""

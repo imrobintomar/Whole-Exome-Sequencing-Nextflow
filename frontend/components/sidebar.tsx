@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Upload, ListChecks, BarChart3, Dna } from "lucide-react"
+import { Home, Upload, ListChecks, BarChart3, Dna, Filter } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -17,11 +17,12 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
     { id: "overview", label: "Overview", icon: Home },
     { id: "upload", label: "Upload", icon: Upload },
     { id: "jobs", label: "Jobs", icon: ListChecks },
+    { id: "panels", label: "Gene Panels", icon: Filter },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ]
 
   return (
-    <div className="flex h-screen w-64 flex-col border-r bg-card">
+    <div className="hidden lg:flex h-screen w-64 flex-col border-r bg-card">
       {/* Logo/Brand */}
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <Dna className="h-6 w-6 text-primary" />

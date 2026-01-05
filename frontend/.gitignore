@@ -1,7 +1,10 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
 # dependencies
 /node_modules
 /.pnp
 .pnp.js
+.yarn/install-state.gz
 
 # testing
 /coverage
@@ -24,7 +27,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
-.env
+.env.local
 
 # vercel
 .vercel
@@ -32,6 +35,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-# Runtime data
-uploads/
-wes_pipeline.db

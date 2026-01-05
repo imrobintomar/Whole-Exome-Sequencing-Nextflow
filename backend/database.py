@@ -47,6 +47,7 @@ class Job(Base):
     filtered_tsv_path = Column(String, nullable=True)
 
     error_message = Column(String, nullable=True)
+    process_id = Column(Integer, nullable=True)  # Nextflow process ID for cancellation
     created_at = Column(DateTime, default=datetime.utcnow)
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
