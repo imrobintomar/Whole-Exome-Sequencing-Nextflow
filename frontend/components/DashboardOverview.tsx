@@ -16,9 +16,10 @@ export default function DashboardOverview() {
   const loadJobs = async () => {
     try {
       const data = await getJobs()
-      setJobs(data)
+      setJobs(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Failed to load jobs:", error)
+      setJobs([]) // Ensure jobs is always an array
     } finally {
       setLoading(false)
     }
