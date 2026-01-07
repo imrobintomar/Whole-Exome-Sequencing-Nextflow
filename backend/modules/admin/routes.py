@@ -3,7 +3,7 @@ Admin API Routes
 Admin-only endpoints for platform management
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from middleware.admin_guard import require_admin
 from database import SessionLocal, Job, User
 from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser
@@ -13,6 +13,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 import os
 from pathlib import Path
+from typing import Optional
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -141,7 +142,7 @@ async def get_all_users(admin=Depends(require_admin)):
         user_data = []
         for user in users:
             subscription = db.query(Subscription).filter(
-                Subscription.user_id == user.uid
+                Subscription.user_id == user.firebase_uid
             ).first()
 
             plan = None
@@ -152,12 +153,12 @@ async def get_all_users(admin=Depends(require_admin)):
 
             current_month = int(datetime.now().strftime('%Y%m'))
             usage = db.query(UsageTracking).filter(
-                UsageTracking.user_id == user.uid,
+                UsageTracking.user_id == user.firebase_uid,
                 UsageTracking.month == current_month
             ).first()
 
             user_data.append({
-                "uid": user.uid,
+                "uid": user.firebase_uid,
                 "email": user.email,
                 "created_at": user.created_at,
                 "subscription": {
@@ -171,6 +172,74 @@ async def get_all_users(admin=Depends(require_admin)):
             })
 
         return {"users": user_data, "total": len(user_data)}
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/usage")
+async def update_user_usage(
+    user_uid: str,
+    jobs_limit: Optional[int] = Query(None),
+    reset_count: bool = Query(False),
+    admin=Depends(require_admin)
+):
+    """
+    Update user's usage limits or reset usage count
+    """
+    # Store admin firebase_uid before session closes
+    admin_firebase_uid = admin.firebase_uid
+
+    db = SessionLocal()
+    try:
+        current_month = int(datetime.now().strftime('%Y%m'))
+
+        # Get or create usage tracking for current month
+        usage = db.query(UsageTracking).filter(
+            UsageTracking.user_id == user_uid,
+            UsageTracking.month == current_month
+        ).first()
+
+        if not usage:
+            # Create new usage tracking entry
+            usage = UsageTracking(
+                user_id=user_uid,
+                month=current_month,
+                jobs_executed=0,
+                jobs_limit=jobs_limit if jobs_limit is not None else 2
+            )
+            db.add(usage)
+        else:
+            # Update existing usage
+            if jobs_limit is not None:
+                usage.jobs_limit = jobs_limit
+            if reset_count:
+                usage.jobs_executed = 0
+
+        db.commit()
+        db.refresh(usage)
+
+        # Log the action
+        AuditService(db).log_action(
+            action="update_user_usage",
+            user_id=admin_firebase_uid,
+            resource_type="user",
+            resource_id=user_uid,
+            metadata={
+                "jobs_limit": usage.jobs_limit,
+                "jobs_executed": usage.jobs_executed,
+                "reset_count": reset_count
+            }
+        )
+
+        return {
+            "success": True,
+            "usage": {
+                "user_id": user_uid,
+                "jobs_executed": usage.jobs_executed,
+                "jobs_limit": usage.jobs_limit,
+                "month": usage.month
+            }
+        }
     finally:
         db.close()
 

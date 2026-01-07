@@ -41,8 +41,10 @@ try:
     app.include_router(billing_router)
     app.include_router(chat_router)
     print("✅ SaaS modules loaded successfully")
-except ImportError as e:
-    print(f"⚠️  SaaS modules not available: {e}")
+except Exception as e:
+    print(f"⚠️  SaaS modules not available: {type(e).__name__}: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Middleware to handle ngrok-skip-browser-warning
 @app.middleware("http")

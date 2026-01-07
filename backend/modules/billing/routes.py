@@ -4,7 +4,7 @@ Subscription and payment management endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Header
-from middleware.auth import get_current_user
+from firebase_auth import get_current_user
 from database import SessionLocal, User
 from database_extensions import SubscriptionPlan, Subscription, UsageTracking
 from services.stripe_service import StripeService

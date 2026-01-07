@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Upload, ListChecks, BarChart3, Dna, Filter } from "lucide-react"
+import { Home, Upload, ListChecks, BarChart3, Dna, Filter, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,7 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
     { id: "jobs", label: "Jobs", icon: ListChecks },
     { id: "panels", label: "Gene Panels", icon: Filter },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "support", label: "Support", icon: MessageCircle },
   ]
 
   return (

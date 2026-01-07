@@ -8,7 +8,7 @@ from firebase_auth import get_current_user
 from database import SessionLocal
 from database_extensions import AdminUser
 from datetime import datetime
-import os
+from config import settings
 
 async def require_admin(current_user = Depends(get_current_user)):
     """
@@ -21,25 +21,32 @@ async def require_admin(current_user = Depends(get_current_user)):
     """
     db = SessionLocal()
     try:
+        # Debug logging
+        print(f"🔍 Admin check for user: {current_user.firebase_uid}")
+
         # Check database first
         admin = db.query(AdminUser).filter(
-            AdminUser.firebase_uid == current_user.uid
+            AdminUser.firebase_uid == current_user.firebase_uid
         ).first()
 
         if admin:
             # Update last login
             admin.last_login = datetime.utcnow()
             db.commit()
+            print(f"✅ Admin found in database: {current_user.email}")
             return admin
 
         # Fallback: Check environment variable
-        admin_uids = os.getenv("ADMIN_USER_UIDS", "").split(",")
-        admin_uids = [uid.strip() for uid in admin_uids if uid.strip()]
+        admin_uids_str = settings.ADMIN_USER_UIDS or ""
+        admin_uids = [uid.strip() for uid in admin_uids_str.split(",") if uid.strip()]
+        print(f"📋 Admin UIDs from env: {admin_uids}")
+        print(f"🔑 Current user UID: {current_user.firebase_uid}")
+        print(f"✓ Match: {current_user.firebase_uid in admin_uids}")
 
-        if current_user.uid in admin_uids:
+        if current_user.firebase_uid in admin_uids:
             # Auto-create admin user entry
             admin = AdminUser(
-                firebase_uid=current_user.uid,
+                firebase_uid=current_user.firebase_uid,
                 email=current_user.email,
                 is_super_admin=False,
                 last_login=datetime.utcnow()

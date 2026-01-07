@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 import os
 
 class Settings(BaseSettings):
@@ -23,6 +23,13 @@ class Settings(BaseSettings):
 
     # CORS - Support multiple origins for ngrok and Vercel
     CORS_ORIGINS: str = "http://localhost:3000"
+
+    # SaaS Extension - Optional (graceful degradation if not set)
+    FRONTEND_URL: Optional[str] = "http://localhost:3000"
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_PUBLISHABLE_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    ADMIN_USER_UIDS: Optional[str] = ""
 
     class Config:
         env_file = ".env"

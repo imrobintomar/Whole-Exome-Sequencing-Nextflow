@@ -4,7 +4,7 @@ User-Admin chat support system
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from middleware.auth import get_current_user
+from firebase_auth import get_current_user
 from middleware.admin_guard import require_admin
 from database import SessionLocal, User
 from database_extensions import ChatConversation, ChatMessage, Subscription, SubscriptionPlan
@@ -41,7 +41,7 @@ async def create_conversation(
     try:
         # Check if user has chat support enabled
         subscription = db.query(Subscription).filter(
-            Subscription.user_id == current_user.uid,
+            Subscription.user_id == current_user.firebase_uid,
             Subscription.status.in_(['active', 'trialing'])
         ).first()
 
@@ -63,7 +63,7 @@ async def create_conversation(
 
         # Create conversation
         conversation = ChatConversation(
-            user_id=current_user.uid,
+            user_id=current_user.firebase_uid,
             subject=data.subject,
             status='open'
         )
@@ -73,7 +73,7 @@ async def create_conversation(
         # Add initial message
         message = ChatMessage(
             conversation_id=conversation.id,
-            sender_id=current_user.uid,
+            sender_id=current_user.firebase_uid,
             sender_type='user',
             message=data.initial_message
         )
@@ -87,7 +87,7 @@ async def create_conversation(
         audit = AuditService(db)
         audit.log_action(
             action="chat_conversation_created",
-            user_id=current_user.uid,
+            user_id=current_user.firebase_uid,
             resource_type="chat",
             resource_id=str(conversation.id),
             metadata={"subject": data.subject}
@@ -111,7 +111,7 @@ async def get_my_conversations(current_user=Depends(get_current_user)):
     db = SessionLocal()
     try:
         conversations = db.query(ChatConversation).filter(
-            ChatConversation.user_id == current_user.uid
+            ChatConversation.user_id == current_user.firebase_uid
         ).order_by(ChatConversation.last_message_at.desc()).all()
 
         return {
@@ -144,7 +144,7 @@ async def get_conversation_messages(
         # Verify user owns this conversation
         conversation = db.query(ChatConversation).filter(
             ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.uid
+            ChatConversation.user_id == current_user.firebase_uid
         ).first()
 
         if not conversation:
@@ -188,7 +188,7 @@ async def send_message(
         # Verify user owns this conversation
         conversation = db.query(ChatConversation).filter(
             ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.uid
+            ChatConversation.user_id == current_user.firebase_uid
         ).first()
 
         if not conversation:
@@ -203,7 +203,7 @@ async def send_message(
         # Create message
         message = ChatMessage(
             conversation_id=conversation_id,
-            sender_id=current_user.uid,
+            sender_id=current_user.firebase_uid,
             sender_type='user',
             message=data.message
         )
@@ -234,7 +234,7 @@ async def close_conversation(
     try:
         conversation = db.query(ChatConversation).filter(
             ChatConversation.id == conversation_id,
-            ChatConversation.user_id == current_user.uid
+            ChatConversation.user_id == current_user.firebase_uid
         ).first()
 
         if not conversation:
@@ -247,7 +247,7 @@ async def close_conversation(
         audit = AuditService(db)
         audit.log_action(
             action="chat_conversation_closed",
-            user_id=current_user.uid,
+            user_id=current_user.firebase_uid,
             resource_type="chat",
             resource_id=str(conversation_id)
         )
@@ -286,7 +286,7 @@ async def get_all_conversations(
         # Get user emails
         conv_data = []
         for conv in conversations:
-            user = db.query(User).filter(User.uid == conv.user_id).first()
+            user = db.query(User).filter(User.firebase_uid == conv.user_id).first()
             conv_data.append({
                 "id": conv.id,
                 "subject": conv.subject,
@@ -326,7 +326,7 @@ async def admin_get_conversation_messages(
             raise HTTPException(status_code=404, detail="Conversation not found")
 
         # Get user info
-        user = db.query(User).filter(User.uid == conversation.user_id).first()
+        user = db.query(User).filter(User.firebase_uid == conversation.user_id).first()
 
         messages = db.query(ChatMessage).filter(
             ChatMessage.conversation_id == conversation_id

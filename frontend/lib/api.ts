@@ -343,4 +343,250 @@ export const variantApi = {
   }
 };
 
+// SaaS Extension - Admin API
+export interface AdminDashboardStats {
+  users: {
+    total: number;
+    active_subscriptions: number;
+  };
+  jobs: {
+    total: number;
+    running: number;
+  };
+  revenue: {
+    monthly_recurring_cents: number;
+    monthly_recurring_usd: number;
+  };
+  system: {
+    cpu: { usage_percent: number; count: number };
+    memory: { total_gb: number; used_gb: number; percent: number };
+    disk: { total_gb: number; used_gb: number; percent: number };
+  };
+  nextflow_processes: number;
+  unread_chats: number;
+}
+
+export interface AdminUser {
+  uid: string;
+  email: string;
+  created_at: string;
+  subscription: {
+    plan: string;
+    status: string;
+  } | null;
+  usage: {
+    jobs_executed: number;
+    jobs_limit: number;
+  } | null;
+}
+
+export interface AdminJob extends Job {
+  user_id: string;
+}
+
+export const adminApi = {
+  getDashboardStats: async () => {
+    const response = await api.get<AdminDashboardStats>('/admin/dashboard/stats');
+    return response.data;
+  },
+
+  getAllJobs: async (params?: { status?: string; user_id?: string; limit?: number; offset?: number }) => {
+    const response = await api.get<{ jobs: AdminJob[]; total: number; limit: number; offset: number }>('/admin/jobs', { params });
+    return response.data;
+  },
+
+  getJobLogs: async (jobId: string) => {
+    const response = await api.get<{ logs: string | null; path: string; error?: string }>(`/admin/jobs/${jobId}/logs`);
+    return response.data;
+  },
+
+  getAllUsers: async () => {
+    const response = await api.get<{ users: AdminUser[]; total: number }>('/admin/users');
+    return response.data;
+  },
+
+  getSystemMetrics: async () => {
+    const response = await api.get<{
+      system: AdminDashboardStats['system'];
+      nextflow_processes: number;
+      storage: { total_gb: number; used_gb: number; percent: number };
+      timestamp: string;
+    }>('/admin/system/metrics');
+    return response.data;
+  },
+
+  updateUserUsage: async (userUid: string, jobsLimit?: number, resetCount?: boolean) => {
+    const response = await api.post<{
+      success: boolean;
+      usage: {
+        user_id: string;
+        jobs_executed: number;
+        jobs_limit: number;
+        month: number;
+      };
+    }>(`/admin/users/${userUid}/usage`, null, {
+      params: { jobs_limit: jobsLimit, reset_count: resetCount }
+    });
+    return response.data;
+  },
+};
+
+// SaaS Extension - Billing API
+export interface SubscriptionPlan {
+  id: number;
+  name: string;
+  price_cents: number;
+  price_usd: number;
+  monthly_jobs_limit: number;
+  chat_support: boolean;
+  features: string[];
+}
+
+export interface UserSubscription {
+  subscription: {
+    status: string;
+    current_period_start: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+    stripe_customer_id: string;
+    stripe_subscription_id: string;
+  } | null;
+  plan: {
+    name: string;
+    monthly_jobs_limit: number;
+    chat_support: boolean;
+    price_cents: number;
+    features?: string[];
+  };
+  usage: {
+    jobs_executed: number;
+    jobs_limit: number;
+    month: number;
+  };
+}
+
+export interface UsageStats {
+  month: number;
+  jobs_executed: number;
+  jobs_limit: number;
+  jobs_remaining: number;
+  usage_percent: number;
+  plan_name: string;
+  chat_support_enabled: boolean;
+}
+
+export const billingApi = {
+  getPlans: async () => {
+    const response = await api.get<{ plans: SubscriptionPlan[] }>('/billing/plans');
+    return response.data.plans;
+  },
+
+  getSubscription: async () => {
+    const response = await api.get<UserSubscription>('/billing/subscription');
+    return response.data;
+  },
+
+  createCheckout: async (planId: number) => {
+    const response = await api.post<{ checkout_url: string; plan: { name: string; price_cents: number } }>('/billing/checkout', null, {
+      params: { plan_id: planId }
+    });
+    return response.data;
+  },
+
+  createPortalSession: async () => {
+    const response = await api.post<{ portal_url: string }>('/billing/portal');
+    return response.data;
+  },
+
+  getUsage: async () => {
+    const response = await api.get<UsageStats>('/billing/usage');
+    return response.data;
+  },
+};
+
+// SaaS Extension - Chat API
+export interface ChatConversation {
+  id: number;
+  subject: string;
+  status: 'open' | 'resolved' | 'closed';
+  created_at: string;
+  last_message_at: string;
+  admin_id: string | null;
+}
+
+export interface ChatMessage {
+  id: number;
+  sender_type: 'user' | 'admin';
+  sender_id?: string;
+  message: string;
+  created_at: string;
+}
+
+export interface ConversationDetail {
+  conversation: ChatConversation;
+  messages: ChatMessage[];
+}
+
+export const chatApi = {
+  createConversation: async (subject: string, initialMessage: string) => {
+    const response = await api.post<{ conversation_id: number; subject: string; status: string; created_at: string }>('/chat/conversations', {
+      subject,
+      initial_message: initialMessage,
+    });
+    return response.data;
+  },
+
+  getConversations: async () => {
+    const response = await api.get<{ conversations: ChatConversation[] }>('/chat/conversations');
+    return response.data.conversations;
+  },
+
+  getConversationMessages: async (conversationId: number) => {
+    const response = await api.get<ConversationDetail>(`/chat/conversations/${conversationId}/messages`);
+    return response.data;
+  },
+
+  sendMessage: async (conversationId: number, message: string) => {
+    const response = await api.post<{ message_id: number; created_at: string }>(`/chat/conversations/${conversationId}/messages`, {
+      message,
+    });
+    return response.data;
+  },
+
+  closeConversation: async (conversationId: number) => {
+    const response = await api.patch<{ status: string }>(`/chat/conversations/${conversationId}/close`);
+    return response.data;
+  },
+
+  // Admin endpoints
+  adminGetConversations: async (params?: { status?: string; limit?: number; offset?: number }) => {
+    const response = await api.get<{
+      conversations: Array<ChatConversation & { user_email: string }>;
+      total: number;
+      limit: number;
+      offset: number;
+    }>('/chat/admin/conversations', { params });
+    return response.data;
+  },
+
+  adminGetConversationMessages: async (conversationId: number) => {
+    const response = await api.get<ConversationDetail & { conversation: ChatConversation & { user_email: string } }>(`/chat/admin/conversations/${conversationId}/messages`);
+    return response.data;
+  },
+
+  adminSendMessage: async (conversationId: number, message: string) => {
+    const response = await api.post<{ message_id: number; created_at: string }>(`/chat/admin/conversations/${conversationId}/messages`, {
+      message,
+    });
+    return response.data;
+  },
+
+  adminUpdateStatus: async (conversationId: number, status: 'open' | 'resolved' | 'closed') => {
+    const response = await api.patch<{ status: string }>(`/chat/admin/conversations/${conversationId}/status`, null, {
+      params: { status }
+    });
+    return response.data;
+  },
+};
+
 export default api;

@@ -12,6 +12,7 @@ import GenePanelFilter from './GenePanelFilter';
 import ACMGClassificationView from './ACMGClassificationView';
 import IGVBrowser from './IGVBrowser';
 import { VariantVisualization } from './VariantVisualization';
+import SupportChat from './SupportChat';
 
 interface DashboardProps {
   user: User;
@@ -19,7 +20,7 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentView, setCurrentView] = useState<'overview' | 'upload' | 'jobs' | 'analytics' | 'panels' | 'acmg' | 'igv' | 'variants'>('overview');
+  const [currentView, setCurrentView] = useState<'overview' | 'upload' | 'jobs' | 'analytics' | 'panels' | 'acmg' | 'igv' | 'variants' | 'support'>('overview');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedJobForACMG, setSelectedJobForACMG] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForIGV, setSelectedJobForIGV] = useState<{ jobId: string; sampleName: string } | null>(null);
@@ -102,6 +103,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               jobId={selectedJobForVariants}
               onBack={handleBackToJobs}
             />
+          )}
+          {currentView === 'support' && (
+            <SupportChat />
           )}
         </main>
       </div>
