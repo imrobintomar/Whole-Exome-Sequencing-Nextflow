@@ -48,3 +48,4 @@ Thumbs.db
 # OS files
 .DS_Store
 Thumbs.db
+backend/firebase-service-account.json

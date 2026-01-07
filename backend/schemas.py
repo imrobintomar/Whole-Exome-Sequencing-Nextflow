@@ -1,7 +1,8 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
-from typing import Optional
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+from typing import Optional, List
 from datetime import datetime
 from database import JobStatus
+import re
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -41,3 +42,42 @@ class JobDetailResponse(JobResponse):
     raw_vcf_path: Optional[str] = None
     annotated_vcf_path: Optional[str] = None
     filtered_tsv_path: Optional[str] = None
+
+class GeneListFilter(BaseModel):
+    """Request model for filtering variants by gene list"""
+    genes: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="List of gene symbols (1-1000 genes)"
+    )
+
+    @field_validator('genes')
+    @classmethod
+    def validate_gene_names(cls, genes: List[str]) -> List[str]:
+        """Validate gene names are alphanumeric with allowed characters"""
+        validated_genes = []
+        gene_pattern = re.compile(r'^[A-Z0-9\-_.]+$', re.IGNORECASE)
+
+        for gene in genes:
+            gene = gene.strip()
+            if not gene:
+                continue
+            if not gene_pattern.match(gene):
+                raise ValueError(f"Invalid gene name: {gene}. Only alphanumeric characters, hyphens, underscores, and periods allowed.")
+            if len(gene) > 50:
+                raise ValueError(f"Gene name too long: {gene}. Maximum 50 characters.")
+            validated_genes.append(gene.upper())
+
+        if not validated_genes:
+            raise ValueError("Gene list cannot be empty after validation")
+
+        # Remove duplicates while preserving order
+        seen = set()
+        unique_genes = []
+        for gene in validated_genes:
+            if gene not in seen:
+                seen.add(gene)
+                unique_genes.append(gene)
+
+        return unique_genes

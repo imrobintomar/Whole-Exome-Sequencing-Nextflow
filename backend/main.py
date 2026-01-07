@@ -10,7 +10,7 @@ import os
 
 from database import get_db, init_db, User, Job, JobStatus
 from firebase_auth import get_current_user
-from schemas import JobResponse, JobDetailResponse
+from schemas import JobResponse, JobDetailResponse, GeneListFilter
 from config import settings
 from pipeline import run_job_async, PipelineRunner
 from gene_panels import GenePanelManager
@@ -31,13 +31,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="WES Pipeline API", version="1.0.0", lifespan=lifespan)
 
-# CORS configuration
+# Middleware to handle ngrok-skip-browser-warning
+@app.middleware("http")
+async def add_ngrok_headers(request, call_next):
+    response = await call_next(request)
+    # Add headers for ngrok compatibility
+    response.headers["ngrok-skip-browser-warning"] = "true"
+    return response
+
+# CORS configuration - must be added AFTER custom middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Health check endpoint
@@ -90,8 +99,8 @@ async def submit_job(
     db.commit()
     db.refresh(job)
 
-    # Start pipeline in background
-    background_tasks.add_task(run_job_async, job_id, db)
+    # Start pipeline in background (don't pass db session)
+    background_tasks.add_task(run_job_async, job_id)
 
     return job
 
@@ -149,10 +158,20 @@ def rerun_job(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Run pipeline in background thread
+    # Run pipeline in background thread with proper session management
     def run_rerun():
-        runner = PipelineRunner(job, db)
-        runner.rerun_pipeline()
+        from database import SessionLocal
+        db_thread = SessionLocal()
+        try:
+            # Re-fetch job in this thread's session
+            job_thread = db_thread.query(Job).filter(Job.job_id == job_id).first()
+            if job_thread:
+                runner = PipelineRunner(job_thread, db_thread)
+                runner.rerun_pipeline()
+        except Exception as e:
+            print(f"Error in rerun thread: {e}")
+        finally:
+            db_thread.close()
 
     thread = threading.Thread(target=run_rerun)
     thread.daemon = True
@@ -175,10 +194,20 @@ def resume_job(
     if job.status != JobStatus.FAILED:
         raise HTTPException(status_code=400, detail=f"Cannot resume job with status: {job.status}")
 
-    # Run pipeline in background thread
+    # Run pipeline in background thread with proper session management
     def run_resume():
-        runner = PipelineRunner(job, db)
-        runner.resume_pipeline()
+        from database import SessionLocal
+        db_thread = SessionLocal()
+        try:
+            # Re-fetch job in this thread's session
+            job_thread = db_thread.query(Job).filter(Job.job_id == job_id).first()
+            if job_thread:
+                runner = PipelineRunner(job_thread, db_thread)
+                runner.resume_pipeline()
+        except Exception as e:
+            print(f"Error in resume thread: {e}")
+        finally:
+            db_thread.close()
 
     thread = threading.Thread(target=run_resume)
     thread.daemon = True
@@ -247,11 +276,11 @@ def download_file(
 @app.post("/jobs/{job_id}/download/filtered")
 async def download_filtered_variants(
     job_id: str,
-    genes: list[str],
+    gene_filter: GeneListFilter,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Download TSV file filtered to specific genes"""
+    """Download TSV file filtered to specific genes (validated gene list)"""
     import pandas as pd
     import tempfile
 
@@ -265,6 +294,9 @@ async def download_filtered_variants(
     if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
         raise HTTPException(status_code=404, detail="TSV file not found")
 
+    # Extract validated genes from request
+    genes = gene_filter.genes
+
     # Read and filter TSV
     try:
         df = pd.read_csv(job.filtered_tsv_path, sep='\t')
@@ -273,7 +305,7 @@ async def download_filtered_variants(
         def gene_in_list(gene_str):
             if pd.isna(gene_str):
                 return False
-            variant_genes = [g.strip() for g in str(gene_str).split(',')]
+            variant_genes = [g.strip().upper() for g in str(gene_str).split(',')]
             return any(g in genes for g in variant_genes)
 
         gene_column = 'Gene.refGeneWithVer'
@@ -282,17 +314,34 @@ async def download_filtered_variants(
         else:
             raise HTTPException(status_code=500, detail="Gene column not found in TSV")
 
-        # Write to temporary file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as tmp:
-            filtered_df.to_csv(tmp.name, sep='\t', index=False)
-            temp_path = tmp.name
+        # Write to temporary file with proper cleanup
+        temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False)
+        try:
+            filtered_df.to_csv(temp_file.name, sep='\t', index=False)
+            temp_path = temp_file.name
+            temp_file.close()
 
-        return FileResponse(
-            path=temp_path,
-            filename=f"{job.sample_name}_filtered_{len(genes)}genes.tsv",
-            media_type="text/tab-separated-values",
-            background=lambda: os.unlink(temp_path)  # Cleanup after sending
-        )
+            # Safe cleanup function
+            def cleanup_temp_file():
+                try:
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                except Exception as e:
+                    print(f"Warning: Failed to cleanup temp file {temp_path}: {e}")
+
+            return FileResponse(
+                path=temp_path,
+                filename=f"{job.sample_name}_filtered_{len(genes)}genes.tsv",
+                media_type="text/tab-separated-values",
+                background=cleanup_temp_file
+            )
+        except Exception as write_error:
+            # Clean up temp file if writing failed
+            temp_file.close()
+            if os.path.exists(temp_file.name):
+                os.unlink(temp_file.name)
+            raise HTTPException(status_code=500, detail=f"Failed to write filtered variants: {str(write_error)}")
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to filter variants: {str(e)}")
 

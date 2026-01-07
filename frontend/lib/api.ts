@@ -5,6 +5,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const api = axios.create({
   baseURL: API_URL,
+  headers: {
+    // Add ngrok-skip-browser-warning header for all requests
+    'ngrok-skip-browser-warning': 'true',
+  },
 });
 
 // Add Firebase token to requests
@@ -14,6 +18,8 @@ api.interceptors.request.use(async (config) => {
     const token = await user.getIdToken();
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Ensure ngrok header is always present
+  config.headers['ngrok-skip-browser-warning'] = 'true';
   return config;
 });
 

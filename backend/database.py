@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, DateTime, Enum as SQLEnum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from config import settings
 
@@ -26,7 +26,7 @@ class User(Base):
     firebase_uid = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, index=True)
     username = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -48,7 +48,7 @@ class Job(Base):
 
     error_message = Column(String, nullable=True)
     process_id = Column(Integer, nullable=True)  # Nextflow process ID for cancellation
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 

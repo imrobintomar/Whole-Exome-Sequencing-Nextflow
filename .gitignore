@@ -9,7 +9,7 @@ __pycache__/
 env/
 venv/
 ENV/
-
+backend/firebase-service-account.json
 # --------------------
 # Packaging / build
 # --------------------
@@ -99,3 +99,7 @@ results/
 
 # FUSE temporary files
 .fuse_hidden*
+backend/.env
+*.db
+__pycache__/
+.venv/

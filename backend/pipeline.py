@@ -2,7 +2,7 @@ import subprocess
 import os
 import shutil
 import signal
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -29,9 +29,17 @@ class PipelineRunner:
         return input_dir, self.job_dir / "output"
 
     def update_pipeline_step(self, step: str):
-        """Update the current pipeline step in the database"""
-        self.job.current_step = step
-        self.db.commit()
+        """Update the current pipeline step in the database with error handling"""
+        try:
+            self.job.current_step = step
+            self.db.commit()
+        except Exception as e:
+            print(f"Warning: Failed to update pipeline step to '{step}': {e}")
+            # Try to rollback and continue
+            try:
+                self.db.rollback()
+            except:
+                pass
 
     def parse_nextflow_output(self, line: str) -> Optional[str]:
         """Parse Nextflow output to identify current step"""
@@ -60,7 +68,7 @@ class PipelineRunner:
         try:
             # Update job status to running
             self.job.status = JobStatus.RUNNING
-            self.job.started_at = datetime.utcnow()
+            self.job.started_at = datetime.now(timezone.utc)
             self.job.current_step = "Initializing"
             self.db.commit()
 
@@ -77,12 +85,14 @@ class PipelineRunner:
             ]
 
             # Run pipeline with real-time output monitoring
+            # Use process group for proper cancellation
             process = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
-                bufsize=1
+                bufsize=1,
+                preexec_fn=os.setsid  # Create new process group
             )
 
             # Store process ID for cancellation
@@ -90,14 +100,22 @@ class PipelineRunner:
             self.db.commit()
 
             output_lines = []
-            # Monitor output in real-time
-            for line in iter(process.stdout.readline, ''):
-                if line:
-                    output_lines.append(line)
-                    # Try to detect current step from output
-                    step = self.parse_nextflow_output(line)
-                    if step:
-                        self.update_pipeline_step(step)
+            # Monitor output in real-time with error handling
+            try:
+                for line in iter(process.stdout.readline, ''):
+                    if line:
+                        output_lines.append(line)
+                        # Try to detect current step from output
+                        try:
+                            step = self.parse_nextflow_output(line)
+                            if step:
+                                self.update_pipeline_step(step)
+                        except Exception as parse_error:
+                            print(f"Warning: Error parsing pipeline output: {parse_error}")
+                            # Continue monitoring even if parsing fails
+            except Exception as monitor_error:
+                print(f"Error monitoring pipeline output: {monitor_error}")
+                # Continue to wait for process to complete
 
             process.wait()
             full_output = ''.join(output_lines)
@@ -123,7 +141,7 @@ class PipelineRunner:
 
         self.job.status = JobStatus.COMPLETED
         self.job.current_step = "Completed"
-        self.job.completed_at = datetime.utcnow()
+        self.job.completed_at = datetime.now(timezone.utc)
         self.job.process_id = None  # Clear process ID
         self.job.bam_path = str(bam_file) if bam_file else None
         self.job.raw_vcf_path = str(raw_vcf) if raw_vcf else None
@@ -135,7 +153,7 @@ class PipelineRunner:
     def update_job_failed(self, error_message: str):
         """Update job status to failed"""
         self.job.status = JobStatus.FAILED
-        self.job.completed_at = datetime.utcnow()
+        self.job.completed_at = datetime.now(timezone.utc)
         self.job.process_id = None  # Clear process ID
         self.job.error_message = error_message[:500]
         # Keep current_step if set, otherwise set to "Initializing"
@@ -166,7 +184,7 @@ class PipelineRunner:
             # Update job status
             self.job.status = JobStatus.FAILED
             self.job.error_message = "Pipeline cancelled by user"
-            self.job.completed_at = datetime.utcnow()
+            self.job.completed_at = datetime.now(timezone.utc)
             self.job.process_id = None
             self.db.commit()
 
@@ -208,18 +226,25 @@ class PipelineRunner:
 
         # Update status to running
         self.job.status = JobStatus.RUNNING
-        self.job.started_at = datetime.utcnow()
+        self.job.started_at = datetime.now(timezone.utc)
         self.job.error_message = None
         self.db.commit()
 
         # Run pipeline (already has -resume flag in run_pipeline)
         self.run_pipeline()
 
-def run_job_async(job_id: str, db: Session):
+def run_job_async(job_id: str):
     """Run pipeline job asynchronously"""
-    job = db.query(Job).filter(Job.job_id == job_id).first()
-    if not job:
-        return
+    # Create a new database session for this background task
+    from database import SessionLocal
+    db = SessionLocal()
 
-    runner = PipelineRunner(job, db)
-    runner.run_pipeline()
+    try:
+        job = db.query(Job).filter(Job.job_id == job_id).first()
+        if not job:
+            return
+
+        runner = PipelineRunner(job, db)
+        runner.run_pipeline()
+    finally:
+        db.close()
