@@ -1,0 +1,14 @@
+version: "2"
+authtoken: YOUR_NGROK_AUTHTOKEN_HERE
+
+tunnels:
+  wes-backend:
+    proto: http
+    addr: 8000
+    schemes:
+      - https
+    inspect: true
+    # This helps with CORS by adding response headers
+    response_headers:
+      add:
+        - "ngrok-skip-browser-warning: true"
