@@ -84,6 +84,33 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleChangePlan = async (userUid: string, currentPlan: string) => {
+    const plans = ['Free', 'Basic', 'Pro'];
+    const planChoice = prompt(
+      `Current plan: ${currentPlan}\n\nEnter new plan:\n1. Free (2 jobs/month)\n2. Basic (10 jobs/month, $29/mo)\n3. Pro (50 jobs/month, $99/mo)\n\nEnter plan name (Free, Basic, or Pro):`,
+      currentPlan
+    );
+
+    if (!planChoice) return;
+
+    const selectedPlan = planChoice.trim();
+    if (!plans.includes(selectedPlan)) {
+      alert('Invalid plan. Please choose: Free, Basic, or Pro');
+      return;
+    }
+
+    try {
+      await adminApi.updateUserSubscription(userUid, selectedPlan);
+      alert(`Successfully updated plan to ${selectedPlan}`);
+      // Reload users to show updated data
+      const usersData = await adminApi.getAllUsers();
+      setUsers(usersData.users);
+    } catch (err: any) {
+      console.error('Error updating subscription:', err);
+      alert('Failed to update subscription plan');
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -286,27 +313,36 @@ export default function AdminDashboard() {
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                        <div className="flex flex-col space-y-2">
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'increase')}
+                              className="text-green-600 hover:text-green-900"
+                              title="Increase limit"
+                            >
+                              +
+                            </button>
+                            <button
+                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'decrease')}
+                              className="text-red-600 hover:text-red-900"
+                              title="Decrease limit"
+                            >
+                              -
+                            </button>
+                            <button
+                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'reset')}
+                              className="text-blue-600 hover:text-blue-900 text-xs"
+                              title="Reset usage count"
+                            >
+                              Reset
+                            </button>
+                          </div>
                           <button
-                            onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'increase')}
-                            className="text-green-600 hover:text-green-900"
-                            title="Increase limit"
+                            onClick={() => handleChangePlan(user.uid, user.subscription?.plan || 'Free')}
+                            className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                            title="Change subscription plan"
                           >
-                            +
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'decrease')}
-                            className="text-red-600 hover:text-red-900"
-                            title="Decrease limit"
-                          >
-                            -
-                          </button>
-                          <button
-                            onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'reset')}
-                            className="text-blue-600 hover:text-blue-900 text-xs"
-                            title="Reset usage count"
-                          >
-                            Reset
+                            Change Plan
                           </button>
                         </div>
                       </td>

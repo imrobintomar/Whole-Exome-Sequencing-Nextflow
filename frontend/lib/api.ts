@@ -429,6 +429,26 @@ export const adminApi = {
     });
     return response.data;
   },
+
+  updateUserSubscription: async (userUid: string, planName: string) => {
+    const response = await api.post<{
+      success: boolean;
+      subscription: {
+        id: number;
+        user_id: string;
+        plan_name: string;
+        plan_id: number;
+        status: string;
+        monthly_jobs_limit: number;
+        price_usd: number;
+        current_period_start: string;
+        current_period_end: string;
+      };
+    }>(`/admin/users/${userUid}/subscription`, null, {
+      params: { plan_name: planName }
+    });
+    return response.data;
+  },
 };
 
 // SaaS Extension - Billing API

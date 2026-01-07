@@ -244,6 +244,121 @@ async def update_user_usage(
         db.close()
 
 
+@router.post("/users/{user_uid}/subscription")
+async def update_user_subscription(
+    user_uid: str,
+    plan_name: str = Query(..., description="Plan name: Free, Basic, Pro, or Enterprise"),
+    admin=Depends(require_admin)
+):
+    """
+    Update user subscription plan (admin only)
+    """
+    admin_firebase_uid = admin.firebase_uid
+    db = SessionLocal()
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get plan by name (case insensitive)
+        plan = db.query(SubscriptionPlan).filter(
+            func.lower(SubscriptionPlan.name) == plan_name.lower()
+        ).first()
+
+        if not plan:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Plan '{plan_name}' not found. Available: Free, Basic, Pro, Enterprise"
+            )
+
+        # Check if user has existing subscription
+        subscription = db.query(Subscription).filter(
+            Subscription.user_id == user_uid
+        ).first()
+
+        current_period_start = datetime.utcnow()
+        current_period_end = current_period_start + timedelta(days=30)
+
+        if subscription:
+            # Update existing subscription
+            old_plan_id = subscription.plan_id
+            subscription.plan_id = plan.id
+            subscription.status = 'active'
+            subscription.current_period_start = current_period_start
+            subscription.current_period_end = current_period_end
+            subscription.cancel_at_period_end = False
+            subscription.updated_at = datetime.utcnow()
+        else:
+            # Create new subscription
+            old_plan_id = None
+            subscription = Subscription(
+                user_id=user_uid,
+                plan_id=plan.id,
+                status='active',
+                current_period_start=current_period_start,
+                current_period_end=current_period_end,
+                cancel_at_period_end=False
+            )
+            db.add(subscription)
+
+        db.commit()
+        db.refresh(subscription)
+
+        # Update usage tracking with new plan limits
+        current_month = int(datetime.now().strftime('%Y%m'))
+        usage = db.query(UsageTracking).filter(
+            UsageTracking.user_id == user_uid,
+            UsageTracking.month == current_month
+        ).first()
+
+        if usage:
+            usage.jobs_limit = plan.monthly_jobs_limit
+        else:
+            usage = UsageTracking(
+                user_id=user_uid,
+                month=current_month,
+                jobs_executed=0,
+                jobs_limit=plan.monthly_jobs_limit
+            )
+            db.add(usage)
+
+        db.commit()
+
+        # Log the action
+        AuditService(db).log_action(
+            action="admin_update_user_subscription",
+            user_id=admin_firebase_uid,
+            resource_type="subscription",
+            resource_id=str(subscription.id),
+            metadata={
+                "user_uid": user_uid,
+                "user_email": user.email,
+                "old_plan_id": old_plan_id,
+                "new_plan_id": plan.id,
+                "new_plan_name": plan.name,
+                "new_jobs_limit": plan.monthly_jobs_limit
+            }
+        )
+
+        return {
+            "success": True,
+            "subscription": {
+                "id": subscription.id,
+                "user_id": user_uid,
+                "plan_name": plan.name,
+                "plan_id": plan.id,
+                "status": subscription.status,
+                "monthly_jobs_limit": plan.monthly_jobs_limit,
+                "price_usd": plan.price_cents / 100,
+                "current_period_start": subscription.current_period_start,
+                "current_period_end": subscription.current_period_end
+            }
+        }
+    finally:
+        db.close()
+
+
 @router.get("/system/metrics")
 async def get_system_metrics(admin=Depends(require_admin)):
     """
