@@ -37,7 +37,7 @@ class GeneConstraintDB:
             True if loaded successfully, False otherwise
         """
         if not self.constraint_file.exists():
-            print(f"❌ Constraint file not found: {self.constraint_file}")
+            print(f" Constraint file not found: {self.constraint_file}")
             print("Run: bash backend/download_gnomad_constraint.sh")
             return False
 
@@ -57,14 +57,14 @@ class GeneConstraintDB:
                         'syn_z': row.get('syn_z', 0)
                     }
 
-                print(f"✅ Loaded constraint data for {len(self._gene_index)} genes")
+                print(f" Loaded constraint data for {len(self._gene_index)} genes")
                 return True
             else:
-                print(f"❌ 'gene' column not found in {self.constraint_file}")
+                print(f" 'gene' column not found in {self.constraint_file}")
                 return False
 
         except Exception as e:
-            print(f"❌ Error loading constraint data: {e}")
+            print(f" Error loading constraint data: {e}")
             return False
 
     @lru_cache(maxsize=10000)

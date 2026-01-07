@@ -78,14 +78,14 @@ def seed_subscription_plans():
             db.add(plan)
 
         db.commit()
-        print("✅ Subscription plans seeded")
+        print(" Subscription plans seeded")
 
         # Display plans
         for plan in plans:
             print(f"   • {plan.name}: ${plan.price_cents/100:.2f}/month - {plan.monthly_jobs_limit} jobs")
 
     except Exception as e:
-        print(f"❌ Error seeding plans: {e}")
+        print(f" Error seeding plans: {e}")
         db.rollback()
     finally:
         db.close()
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     seed_subscription_plans()
 
     print("\n" + "=" * 60)
-    print("✅ SaaS database initialization complete!")
+    print(" SaaS database initialization complete!")
     print("=" * 60)
     print("\nNext steps:")
     print("1. Set required environment variables (see .env.saas.example)")

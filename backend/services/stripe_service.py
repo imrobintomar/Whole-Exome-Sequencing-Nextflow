@@ -13,7 +13,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 class StripeService:
     def __init__(self):
         if not stripe.api_key:
-            print("⚠️  Warning: STRIPE_SECRET_KEY not set. Billing features disabled.")
+            print("  Warning: STRIPE_SECRET_KEY not set. Billing features disabled.")
 
     def create_checkout_session(
         self,

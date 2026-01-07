@@ -19,18 +19,18 @@ try:
         cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
         firebase_admin.initialize_app(cred)
         FIREBASE_INITIALIZED = True
-        print(f"✅ Firebase initialized with service account: {SERVICE_ACCOUNT_PATH}")
+        print(f" Firebase initialized with service account: {SERVICE_ACCOUNT_PATH}")
     else:
-        print(f"⚠️  Firebase service account not found at: {SERVICE_ACCOUNT_PATH}")
-        print(f"⚠️  Download from: https://console.firebase.google.com/project/variant-ac1c6/settings/serviceaccounts/adminsdk")
-        print(f"⚠️  Save as: {SERVICE_ACCOUNT_PATH}")
-        print(f"⚠️  Authentication will not work until configured!")
+        print(f"  Firebase service account not found at: {SERVICE_ACCOUNT_PATH}")
+        print(f"  Download from: https://console.firebase.google.com/project/variant-ac1c6/settings/serviceaccounts/adminsdk")
+        print(f"  Save as: {SERVICE_ACCOUNT_PATH}")
+        print(f" Authentication will not work until configured!")
 except ValueError as e:
-    print(f"ℹ️  Firebase app already initialized: {e}")
+    print(f"ℹ  Firebase app already initialized: {e}")
     FIREBASE_INITIALIZED = True
 except Exception as e:
-    print(f"❌ Firebase initialization failed: {e}")
-    print(f"⚠️  Authentication will not work!")
+    print(f" Firebase initialization failed: {e}")
+    print(f"  Authentication will not work!")
 
 security = HTTPBearer()
 

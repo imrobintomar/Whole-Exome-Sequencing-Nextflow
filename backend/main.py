@@ -31,6 +31,19 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="WES Pipeline API", version="1.0.0", lifespan=lifespan)
 
+# Import SaaS modules (if available)
+try:
+    from modules.admin.routes import router as admin_router
+    from modules.billing.routes import router as billing_router
+    from modules.chat.routes import router as chat_router
+
+    app.include_router(admin_router)
+    app.include_router(billing_router)
+    app.include_router(chat_router)
+    print("✅ SaaS modules loaded successfully")
+except ImportError as e:
+    print(f"⚠️  SaaS modules not available: {e}")
+
 # Middleware to handle ngrok-skip-browser-warning
 @app.middleware("http")
 async def add_ngrok_headers(request, call_next):
@@ -54,7 +67,74 @@ app.add_middleware(
 def read_root():
     return {"status": "ok", "message": "WES Pipeline API is running"}
 
-# Submit new job with FASTQ files
+# Submit new job WITH billing/usage enforcement (SaaS wrapper)
+@app.post("/jobs/submit-with-billing", response_model=JobResponse)
+async def submit_job_with_billing(
+    background_tasks: BackgroundTasks,
+    sample_name: str = Form(...),
+    fastq_r1: UploadFile = File(...),
+    fastq_r2: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Submit job with usage limit enforcement (wrapper for SaaS)
+    This is the recommended endpoint for production use
+    """
+    try:
+        from middleware.subscription_guard import enforce_usage_limit
+        from services.usage_tracking_service import UsageTrackingService
+        from services.audit_service import AuditService
+
+        # Enforce usage limits
+        try:
+            billing_info = await enforce_usage_limit(current_user)
+        except HTTPException as e:
+            # Usage limit exceeded or payment required
+            raise e
+
+        # Proceed with job submission (same logic as original endpoint)
+        job = await submit_job(
+            background_tasks=background_tasks,
+            sample_name=sample_name,
+            fastq_r1=fastq_r1,
+            fastq_r2=fastq_r2,
+            current_user=current_user,
+            db=db
+        )
+
+        # Increment usage counter
+        usage_service = UsageTrackingService(db)
+        usage_service.increment_job_count(current_user.uid)
+
+        # Audit log
+        audit = AuditService(db)
+        audit.log_action(
+            action="job_submitted",
+            user_id=current_user.uid,
+            resource_type="job",
+            resource_id=job.job_id,
+            metadata={
+                "sample_name": sample_name,
+                "plan": billing_info["plan"].name if billing_info.get("plan") else "Free"
+            }
+        )
+
+        return job
+
+    except ImportError:
+        # SaaS modules not available, fall back to regular submission
+        return await submit_job(
+            background_tasks=background_tasks,
+            sample_name=sample_name,
+            fastq_r1=fastq_r1,
+            fastq_r2=fastq_r2,
+            current_user=current_user,
+            db=db
+        )
+
+
+# Submit new job with FASTQ files (original endpoint - kept for backward compatibility)
 @app.post("/jobs/submit", response_model=JobResponse)
 async def submit_job(
     background_tasks: BackgroundTasks,
