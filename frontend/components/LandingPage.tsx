@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 
 interface LandingPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate: (page: 'home' | 'about' | 'research' | 'contact' | 'signin') => void;
   onSignIn: () => void;
 }
 
