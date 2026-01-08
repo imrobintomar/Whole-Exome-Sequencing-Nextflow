@@ -14,19 +14,19 @@ process extractFilterFields {
         java -jar ${params.snpsift_jar} extractFields -s "\t" -e "." ${vcf} \\
             CHROM POS REF ALT QUAL DP \\
             "GEN[0].GT" "GEN[0].AD[1]" "GEN[0].DP" \\
-            ExonicFunc.refGene AAChange.refGene Gene.refGene Func.refGene \\
+            ExonicFunc.refGeneWithVer AAChange.refGeneWithVer Gene.refGeneWithVer Func.refGeneWithVer \\
             avsnp150 gnomad40_exome_AF ExAC_ALL cosmic84_coding \\
             ALLELEID CLNDISDB CLNDN CLNHGVS CLNREVSTAT CLNSIG CLNVC CLNVCSO \\
             GENEINFO MC ORIGIN RS AF_EXAC AF_ESP CLNSIGCONF AF_TGP CLNVI \\
             CLNDISDBINCL CLNDNINCL CLNSIGINCL DBVARID SCIDISDB SCIDN \\
             ONCDISDB ONCDN \\
-            SIFT_pred SIFT4G_pred CADD_phred DANN_rankscore LINSIGHT_rankscore GERP_RS_rankscore \\
+            SIFT_pred SIFT4G_pred CADD_phred DANN_rankscore LINSIGHT_rankscore  \\
             Polyphen2_HVAR_pred Polyphen2_HDIV_pred LRT_pred MutationTaster_pred \\
             MutationAssessor_pred FATHMM_pred PROVEAN_pred MetaSVM_pred MetaLR_pred MetaRNN_pred \\
             REVEL_rankscore MutPred_rankscore MVP_rankscore MPC_rankscore \\
             PrimateAI_pred DEOGEN2_pred BayesDel_addAF_pred BayesDel_noAF_pred ClinPred_pred \\
             Interpro_domain GTEx_V8_gene GTEx_V8_tissue \\
-            ExcessHet FS MQ QD SOR AC AC_Het AC_Hom AF AN CM ExcHet HWE \\
+            ExcessHet FS MQ QD SOR AC   AF AN   \\
             Ensembl_gene.refGeneWithVer chr.refGeneWithVer Gene_old_names.refGeneWithVer \\
             Gene_other_names.refGeneWithVer Uniprot_acc_HGNC_Uniprot.refGeneWithVer \\
             Uniprot_id_HGNC_Uniprot.refGeneWithVer Entrez_gene_id.refGeneWithVer \\
@@ -72,12 +72,7 @@ process extractFilterFields {
             SORVA_LOForMissense_MAF0.005_HomOrCompoundHet.refGeneWithVer \\
             SORVA_LOForMissense_MAF0.001_HetOrHom.refGeneWithVer \\
             SORVA_LOForMissense_MAF0.001_HomOrCompoundHet.refGeneWithVer \\
-            Essential_gene.refGeneWithVer Essential_gene_CRISPR.refGeneWithVer \\
-            Essential_gene_CRISPR2.refGeneWithVer Essential_gene_gene_trap.refGeneWithVer \\
-            Gene_indispensability_score.refGeneWithVer Gene_indispensability_pred.refGeneWithVer \\
-            MGI_mouse_gene.refGeneWithVer MGI_mouse_phenotype.refGeneWithVer \\
             ZFIN_zebrafish_gene.refGeneWithVer ZFIN_zebrafish_structure.refGeneWithVer \\
-            ZFIN_zebrafish_phenotype_quality.refGeneWithVer ZFIN_zebrafish_phenotype_tag.refGeneWithVer \\
             FILTER "ANN[0].ALLELE" "ANN[0].EFFECT" "ANN[0].IMPACT" "ANN[0].GENE" "ANN[0].RANK" \\
             "EFF[0].CODON" "ANN[0].FEATUREID" "ANN[0].GENEID" "ANN[0].HGVS_C" "ANN[0].HGVS_P" "ANN[0].BIOTYPE" \\
             gnomad40_exome_AF_raw gnomad40_exome_AF_XX gnomad40_exome_AF_XY gnomad40_exome_AF_grpmax \\
@@ -86,7 +81,6 @@ process extractFilterFields {
             gnomad40_exome_AF_fin gnomad40_exome_AF_mid gnomad40_exome_AF_nfe \\
             gnomad40_exome_AF_remaining gnomad40_exome_AF_sas \\
             ExAC_AFR ExAC_AMR ExAC_EAS ExAC_FIN ExAC_NFE ExAC_OTH ExAC_SAS \\
-            MLEAC MLEAF MAF_AFR_unrel MAF_AMR_unrel MAF_EAS_unrel MAF_EUR_unrel MAF_SAS_unrel \\
             SIFT_score SIFT_converted_rankscore SIFT4G_score SIFT4G_converted_rankscore \\
             Polyphen2_HDIV_score Polyphen2_HDIV_rankscore Polyphen2_HVAR_score Polyphen2_HVAR_rankscore \\
             LRT_score LRT_converted_rankscore MutationTaster_score MutationTaster_converted_rankscore \\
@@ -97,13 +91,7 @@ process extractFilterFields {
             PrimateAI_score PrimateAI_rankscore DEOGEN2_score DEOGEN2_rankscore \\
             BayesDel_addAF_score BayesDel_addAF_rankscore BayesDel_noAF_score BayesDel_noAF_rankscore \\
             ClinPred_score ClinPred_rankscore Aloft_pred Aloft_Confidence \\
-            CADD_raw CADD_raw_rankscore DANN_score GenoCanyon_rankscore \\
-            integrated_fitCons_score integrated_fitCons_rankscore integrated_confidence_value \\
-            LINSIGHT GERP_NR GERP_RS phyloP100way_vertebrate phyloP100way_vertebrate_rankscore \\
-            phyloP30way_mammalian phyloP30way_mammalian_rankscore \\
-            phastCons100way_vertebrate phastCons100way_vertebrate_rankscore \\
-            phastCons30way_mammalian phastCons30way_mammalian_rankscore \\
-            SiPhy_29way_logOdds SiPhy_29way_logOdds_rankscore \\
+            CADD_raw CADD_raw_rankscore \\
             > ${sample_id}_extracted.tsv
 
         # Create UniqueID column (chr:pos:ref:alt) and insert after POS column
