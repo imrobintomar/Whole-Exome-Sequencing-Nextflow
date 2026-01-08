@@ -29,9 +29,8 @@ include { sortSamPostDedup } from './processes/04_dedup.nf'
 include { baseRecalibrator } from './processes/05_bqsr.nf'
 include { applyBQSR } from './processes/05_bqsr.nf'
 include { haplotypeCaller } from './processes/06_variantcalling.nf'
-include { snpsiftAnnotate1000G } from './processes/07_annotation.nf'
 include { annovarAnnotate } from './processes/07_annotation.nf'
-include { extractFilterFields } from './processes/08_filtering.nf'
+include { convertToFinalTSV } from './processes/08_filtering.nf'
 
 workflow {
     // Additional runtime validation check
@@ -160,17 +159,14 @@ workflow {
     // Variant calling
     vcf_raw = haplotypeCaller(final_bam)
 
-    // 1000 Genomes annotation
-    vcf_1000g = snpsiftAnnotate1000G(vcf_raw)
+    // ANNOVAR annotation (single source of truth)
+    annovar_txt = annovarAnnotate(vcf_raw)
 
-    // ANNOVAR annotation
-    vcf_annovar = annovarAnnotate(vcf_1000g)
-
-    // Extract and filter fields
-    final_tsv = extractFilterFields(vcf_annovar)
+    // Convert to final TSV
+    final_tsv = convertToFinalTSV(annovar_txt)
 
     // Pipeline completion message
-    final_tsv.subscribe { 
+    final_tsv.subscribe {
         log.info "✓ Pipeline completed successfully at ${new Date()}"
     }
 }

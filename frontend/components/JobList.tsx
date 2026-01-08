@@ -175,7 +175,7 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">My Jobs</h2>
           <p className="text-sm text-muted-foreground">
-            Track and manage your sequencing pipeline jobs
+            Track and manage your Analysis  jobs
           </p>
         </div>
         <Button onClick={fetchJobs} variant="outline" className="w-full sm:w-auto">
@@ -196,7 +196,7 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
         <CardHeader>
           <CardTitle>All Jobs</CardTitle>
           <CardDescription>
-            View all your submitted pipeline jobs and download results
+            View all your submitted analysis jobs and download results
           </CardDescription>
         </CardHeader>
         <CardContent>

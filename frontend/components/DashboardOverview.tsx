@@ -40,7 +40,7 @@ export default function DashboardOverview() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
         <p className="text-muted-foreground">
-          Track your whole exome sequencing pipeline jobs at a glance
+          Track your Whole Exome Sequencing Analysis  jobs at a glance
         </p>
       </div>
 
@@ -54,7 +54,7 @@ export default function DashboardOverview() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              All pipeline submissions
+              All Jobs submissions
             </p>
           </CardContent>
         </Card>
@@ -104,7 +104,7 @@ export default function DashboardOverview() {
         <CardHeader>
           <CardTitle>Recent Jobs</CardTitle>
           <CardDescription>
-            Your latest pipeline submissions
+            Your latest  submissions
           </CardDescription>
         </CardHeader>
         <CardContent>

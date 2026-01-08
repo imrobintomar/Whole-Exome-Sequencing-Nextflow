@@ -28,8 +28,8 @@ export function Sidebar({ currentView, onViewChange }: SidebarProps) {
       <div className="flex h-16 items-center gap-2 border-b px-6">
         <Dna className="h-6 w-6 text-primary" />
         <div className="flex flex-col">
-          <span className="text-lg font-bold">WES Pipeline</span>
-          <span className="text-xs text-muted-foreground">Exome Sequencing</span>
+          <span className="text-lg font-bold">ATGCFlow</span>
+          <span className="text-xs text-muted-foreground">Whole Exome Sequencing</span>
         </div>
       </div>
 

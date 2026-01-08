@@ -107,7 +107,7 @@ export default function Home() {
                 <Dna className="h-5 w-5 text-white" />
               </div>
               <span className="text-xl font-bold text-slate-900 cursor-pointer" onClick={() => setCurrentPage('home')}>
-                WES Pipeline
+                ATGCFlow
               </span>
             </div>
 
@@ -161,9 +161,9 @@ export default function Home() {
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
                   <Dna className="h-4 w-4 text-white" />
                 </div>
-                <span className="font-bold text-slate-900">WES Pipeline</span>
+                <span className="font-bold text-slate-900">ATGCFlow</span>
               </div>
-              <p className="text-sm text-slate-600">Production-grade whole exome sequencing analysis platform</p>
+              <p className="text-sm text-slate-600">Industry-grade whole exome sequencing analysis platform</p>
             </div>
 
             <div>
@@ -176,14 +176,7 @@ export default function Home() {
               </ul>
             </div>
 
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Resources</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">Documentation</a></li>
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">GitHub</a></li>
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">API Reference</a></li>
-              </ul>
-            </div>
+            
 
             <div>
               <h4 className="font-semibold text-slate-900 mb-4">Legal</h4>
@@ -198,7 +191,7 @@ export default function Home() {
           <div className="border-t border-slate-200 pt-8">
             <div className="text-center">
               <div className="text-sm text-slate-600">
-                © 2025 WES Pipeline. Research Project • Not for Clinical Use
+                © 2025 ATGCFlow || Research Project || Not for Clinical Use
               </div>
             </div>
           </div>

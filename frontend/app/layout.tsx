@@ -6,8 +6,8 @@ import { ThemeProvider } from '@/components/theme-provider'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'WES Pipeline',
-  description: 'Whole Exome Sequencing Analysis Pipeline',
+  title: 'ATGCFlow',
+  description: 'Whole Exome Sequencing Analysis ',
 }
 
 export default function RootLayout({

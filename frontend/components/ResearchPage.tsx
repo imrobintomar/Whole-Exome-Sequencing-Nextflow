@@ -42,10 +42,7 @@ export default function ResearchPage() {
                 title: 'ACMG Classification',
                 desc: 'Automated variant classification following ACMG/AMP 2015 guidelines with evidence-based scoring and clinical interpretation support.'
               },
-              {
-                title: 'Web Platform',
-                desc: 'FastAPI backend with Next.js frontend, Firebase authentication, SQLite job management, and IGV.js genome browser integration.'
-              }
+              
             ].map((item, i) => (
               <Card key={i} className="border-slate-200">
                 <CardContent className="p-6">
@@ -95,7 +92,7 @@ export default function ResearchPage() {
                 <ul className="text-slate-600 space-y-2 text-sm">
                   <li>• BAM file with BQSR (indexed)</li>
                   <li>• Raw VCF (gzipped & indexed)</li>
-                  <li>• Annotated VCF with VEP & ANNOVAR</li>
+                  <li>• Annotated VCF with  ANNOVAR</li>
                   <li>• Filtered TSV with functional annotations</li>
                 </ul>
               </CardContent>
@@ -111,7 +108,7 @@ export default function ResearchPage() {
               <ul className="text-slate-600 space-y-2 text-sm">
                 <li>• Research use only - not clinically validated</li>
                 <li>• ACMG classifications are automated (require expert review)</li>
-                <li>• Limited to WES data (not optimized for WGS or targeted panels)</li>
+                <li>• Limited to Whole Exome sequencing data (not optimized for WGS or targeted panels)</li>
                 <li>• Requires bioinformatics expertise for result interpretation</li>
                 <li>• Processing time varies with system resources</li>
               </ul>

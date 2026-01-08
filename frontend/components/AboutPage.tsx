@@ -93,16 +93,6 @@ export default function AboutPage() {
                 <li>• ANNOVAR - Functional annotation</li>
               </ul>
             </div>
-            <div className="space-y-3">
-              <h3 className="font-semibold text-slate-900">Platform Stack</h3>
-              <ul className="text-slate-600 space-y-2">
-                <li>• FastAPI - Backend API</li>
-                <li>• Next.js - Frontend framework</li>
-                <li>• Firebase - Authentication</li>
-                <li>• SQLite - Job management</li>
-                <li>• IGV.js - Genome browser</li>
-              </ul>
-            </div>
           </div>
         </div>
       </div>
