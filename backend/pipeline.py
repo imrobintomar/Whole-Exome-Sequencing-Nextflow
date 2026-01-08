@@ -133,11 +133,13 @@ class PipelineRunner:
         """Update job with output file paths"""
         sample = self.job.sample_name
 
-        # Find output files
+        # Find output files (updated for simplified pipeline)
         bam_file = self.find_file(output_dir / "Mapsam", f"{sample}_recall.bam")
         raw_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}.vcf.gz")
-        annotated_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}.annovar.hg38_multianno.vcf")
-        filtered_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}_final_annotated.tsv")
+        # New pipeline outputs ANNOVAR TXT instead of VCF
+        annovar_txt = self.find_file(output_dir / "Germline_VCF", f"{sample}.annovar.hg38_multianno.txt")
+        # New pipeline outputs ${sample}_Final_.tsv
+        final_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}_Final_.tsv")
 
         self.job.status = JobStatus.COMPLETED
         self.job.current_step = "Completed"
@@ -145,8 +147,9 @@ class PipelineRunner:
         self.job.process_id = None  # Clear process ID
         self.job.bam_path = str(bam_file) if bam_file else None
         self.job.raw_vcf_path = str(raw_vcf) if raw_vcf else None
-        self.job.annotated_vcf_path = str(annotated_vcf) if annotated_vcf else None
-        self.job.filtered_tsv_path = str(filtered_tsv) if filtered_tsv else None
+        # Store ANNOVAR TXT in annotated_vcf_path field (repurposed)
+        self.job.annotated_vcf_path = str(annovar_txt) if annovar_txt else None
+        self.job.filtered_tsv_path = str(final_tsv) if final_tsv else None
 
         self.db.commit()
 

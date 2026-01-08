@@ -6,12 +6,13 @@ import { Sidebar } from './sidebar';
 import { DashboardHeader } from './dashboard-header';
 import UploadForm from './UploadForm';
 import JobList from './JobList';
+import JobDetailsPage from './JobDetailsPage';
 import DashboardOverview from './DashboardOverview';
 import AnalyticsDashboard from './AnalyticsDashboard';
 import GenePanelFilter from './GenePanelFilter';
-import ACMGClassificationView from './ACMGClassificationView';
-import IGVBrowser from './IGVBrowser';
-import { VariantVisualization } from './VariantVisualization';
+import ACMGClassificationPage from './ACMGClassificationPage';
+import IGVBrowserPage from './IGVBrowserPage';
+import VariantVisualizationPage from './VariantVisualizationPage';
 import SupportChat from './SupportChat';
 
 interface DashboardProps {
@@ -19,12 +20,15 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
+type ViewType = 'overview' | 'upload' | 'jobs' | 'job-details' | 'analytics' | 'panels' | 'acmg' | 'igv' | 'variants' | 'support';
+
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [currentView, setCurrentView] = useState<'overview' | 'upload' | 'jobs' | 'analytics' | 'panels' | 'acmg' | 'igv' | 'variants' | 'support'>('overview');
+  const [currentView, setCurrentView] = useState<ViewType>('overview');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [selectedJobForACMG, setSelectedJobForACMG] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForIGV, setSelectedJobForIGV] = useState<{ jobId: string; sampleName: string } | null>(null);
-  const [selectedJobForVariants, setSelectedJobForVariants] = useState<string | null>(null);
+  const [selectedJobForVariants, setSelectedJobForVariants] = useState<{ jobId: string; sampleName: string } | null>(null);
 
   const handleJobSubmitted = () => {
     setCurrentView('jobs');
@@ -32,7 +36,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   };
 
   const handleViewChange = (view: string) => {
-    setCurrentView(view as any);
+    setCurrentView(view as ViewType);
+  };
+
+  const handleJobClick = (jobId: string) => {
+    setSelectedJobId(jobId);
+    setCurrentView('job-details');
   };
 
   const handleClassifyClick = (jobId: string, sampleName: string) => {
@@ -45,13 +54,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setCurrentView('igv');
   };
 
-  const handleVariantsClick = (jobId: string) => {
-    setSelectedJobForVariants(jobId);
+  const handleVariantsClick = (jobId: string, sampleName?: string) => {
+    setSelectedJobForVariants({ jobId, sampleName: sampleName || 'Sample' });
     setCurrentView('variants');
   };
 
   const handleBackToJobs = () => {
     setCurrentView('jobs');
+    setSelectedJobId(null);
+    setSelectedJobForACMG(null);
+    setSelectedJobForIGV(null);
     setSelectedJobForVariants(null);
   };
 
@@ -75,7 +87,22 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <UploadForm onJobSubmitted={handleJobSubmitted} />
           )}
           {currentView === 'jobs' && (
-            <JobList key={refreshTrigger} onClassifyClick={handleClassifyClick} onIGVClick={handleIGVClick} onVariantsClick={handleVariantsClick} />
+            <JobList
+              key={refreshTrigger}
+              onJobClick={handleJobClick}
+              onClassifyClick={handleClassifyClick}
+              onIGVClick={handleIGVClick}
+              onVariantsClick={handleVariantsClick}
+            />
+          )}
+          {currentView === 'job-details' && selectedJobId && (
+            <JobDetailsPage
+              jobId={selectedJobId}
+              onBack={handleBackToJobs}
+              onClassifyClick={handleClassifyClick}
+              onIGVClick={handleIGVClick}
+              onVariantsClick={(jobId) => handleVariantsClick(jobId)}
+            />
           )}
           {currentView === 'analytics' && (
             <AnalyticsDashboard />
@@ -83,24 +110,33 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           {currentView === 'panels' && (
             <div className="space-y-6">
               <GenePanelFilter />
-              <JobList key={refreshTrigger} onClassifyClick={handleClassifyClick} onIGVClick={handleIGVClick} onVariantsClick={handleVariantsClick} />
+              <JobList
+                key={refreshTrigger}
+                onJobClick={handleJobClick}
+                onClassifyClick={handleClassifyClick}
+                onIGVClick={handleIGVClick}
+                onVariantsClick={handleVariantsClick}
+              />
             </div>
           )}
           {currentView === 'acmg' && selectedJobForACMG && (
-            <ACMGClassificationView
+            <ACMGClassificationPage
               jobId={selectedJobForACMG.jobId}
               sampleName={selectedJobForACMG.sampleName}
+              onBack={handleBackToJobs}
             />
           )}
           {currentView === 'igv' && selectedJobForIGV && (
-            <IGVBrowser
+            <IGVBrowserPage
               jobId={selectedJobForIGV.jobId}
               sampleName={selectedJobForIGV.sampleName}
+              onBack={handleBackToJobs}
             />
           )}
           {currentView === 'variants' && selectedJobForVariants && (
-            <VariantVisualization
-              jobId={selectedJobForVariants}
+            <VariantVisualizationPage
+              jobId={selectedJobForVariants.jobId}
+              sampleName={selectedJobForVariants.sampleName}
               onBack={handleBackToJobs}
             />
           )}

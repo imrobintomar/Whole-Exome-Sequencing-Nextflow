@@ -346,12 +346,14 @@ def download_file(
     if job.status != JobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Job not completed yet")
 
-    # Map file type to path and custom filename
+    # Map file type to path and custom filename (updated for simplified pipeline)
     file_map = {
         "bam": (job.bam_path, f"{job.sample_name}_recall.bam"),
         "raw_vcf": (job.raw_vcf_path, f"{job.sample_name}.vcf.gz"),
-        "annotated_vcf": (job.annotated_vcf_path, f"{job.sample_name}_annotated.vcf"),
-        "filtered_tsv": (job.filtered_tsv_path, f"{job.sample_name}_final_annotated.tsv")
+        # annotated_vcf now points to ANNOVAR TXT file
+        "annotated_vcf": (job.annotated_vcf_path, f"{job.sample_name}.annovar.hg38_multianno.txt"),
+        # filtered_tsv now points to Final_.tsv
+        "filtered_tsv": (job.filtered_tsv_path, f"{job.sample_name}_Final_.tsv")
     }
 
     file_info = file_map.get(file_type)
@@ -365,7 +367,8 @@ def download_file(
         if file_type == "bam":
             file_path = f"{file_path}.bai"
             download_filename = f"{download_filename}.bai"
-        elif file_type in ["raw_vcf", "annotated_vcf"]:
+        elif file_type == "raw_vcf":
+            # Only raw_vcf has index, annotated_vcf is now TXT format
             file_path = f"{file_path}.tbi"
             download_filename = f"{download_filename}.tbi"
         else:
@@ -378,8 +381,11 @@ def download_file(
     media_type = "application/octet-stream"
     if file_type == "bam" or (index and file_type == "bam"):
         media_type = "application/octet-stream"
-    elif file_type in ["raw_vcf", "annotated_vcf"]:
+    elif file_type == "raw_vcf":
         media_type = "application/gzip" if not index else "application/octet-stream"
+    elif file_type in ["annotated_vcf", "filtered_tsv"]:
+        # Both are now text files
+        media_type = "text/tab-separated-values"
 
     return FileResponse(
         path=file_path,

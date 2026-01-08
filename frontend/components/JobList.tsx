@@ -18,12 +18,13 @@ import {
 import PipelineProgress from './PipelineProgress';
 
 interface JobListProps {
+  onJobClick?: (jobId: string) => void;
   onClassifyClick?: (jobId: string, sampleName: string) => void;
   onIGVClick?: (jobId: string, sampleName: string) => void;
   onVariantsClick?: (jobId: string) => void;
 }
 
-export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }: JobListProps = {}) {
+export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVariantsClick }: JobListProps = {}) {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -212,8 +213,12 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
               {/* Mobile Card View */}
               <div className="block md:hidden space-y-4">
                 {jobs.map((job) => (
-                  <Card key={job.job_id} className="overflow-hidden">
-                    <CardHeader className="pb-3">
+                  <Card
+                    key={job.job_id}
+                    className="overflow-hidden cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => onJobClick?.(job.job_id)}
+                  >
+                    <CardHeader className="pb-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <CardTitle className="text-base truncate">{job.sample_name}</CardTitle>
@@ -399,7 +404,11 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
               </TableHeader>
               <TableBody>
                 {jobs.map((job) => (
-                  <TableRow key={job.job_id}>
+                  <TableRow
+                    key={job.job_id}
+                    className="cursor-pointer hover:bg-accent/50"
+                    onClick={() => onJobClick?.(job.job_id)}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2">
                         {getStatusIcon(job.status)}
@@ -415,7 +424,7 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
                     <TableCell className="text-sm">
                       {format(new Date(job.created_at), 'PPp')}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       {job.status === 'running' ? (
                         <div className="flex justify-end gap-2">
                           <Button
