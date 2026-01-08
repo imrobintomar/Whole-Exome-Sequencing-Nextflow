@@ -84,30 +84,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleChangePlan = async (userUid: string, currentPlan: string) => {
-    const plans = ['Free', 'Basic', 'Pro'];
-    const planChoice = prompt(
-      `Current plan: ${currentPlan}\n\nEnter new plan:\n1. Free (2 jobs/month)\n2. Basic (10 jobs/month, $29/mo)\n3. Pro (50 jobs/month, $99/mo)\n\nEnter plan name (Free, Basic, or Pro):`,
-      currentPlan
-    );
-
-    if (!planChoice) return;
-
-    const selectedPlan = planChoice.trim();
-    if (!plans.includes(selectedPlan)) {
-      alert('Invalid plan. Please choose: Free, Basic, or Pro');
-      return;
-    }
+  const handleChangePlan = async (userUid: string, newPlan: string) => {
+    if (!newPlan) return;
 
     try {
-      await adminApi.updateUserSubscription(userUid, selectedPlan);
-      alert(`Successfully updated plan to ${selectedPlan}`);
+      await adminApi.updateUserSubscription(userUid, newPlan);
+      alert(`Successfully updated plan to ${newPlan}`);
       // Reload users to show updated data
       const usersData = await adminApi.getAllUsers();
       setUsers(usersData.users);
     } catch (err: any) {
       console.error('Error updating subscription:', err);
-      alert('Failed to update subscription plan');
+      alert(`Failed to update subscription plan: ${err.response?.data?.detail || err.message}`);
     }
   };
 
@@ -337,13 +325,16 @@ export default function AdminDashboard() {
                               Reset
                             </button>
                           </div>
-                          <button
-                            onClick={() => handleChangePlan(user.uid, user.subscription?.plan || 'Free')}
-                            className="px-3 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700"
+                          <select
+                            value={user.subscription?.plan || 'Free'}
+                            onChange={(e) => handleChangePlan(user.uid, e.target.value)}
+                            className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                             title="Change subscription plan"
                           >
-                            Change Plan
-                          </button>
+                            <option value="Free">Free (2 jobs/mo)</option>
+                            <option value="Basic">Basic (10 jobs/mo, $29)</option>
+                            <option value="Pro">Pro (50 jobs/mo, $99)</option>
+                          </select>
                         </div>
                       </td>
                     </tr>

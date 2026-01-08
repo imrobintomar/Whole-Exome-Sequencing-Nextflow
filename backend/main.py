@@ -1,12 +1,13 @@
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 from contextlib import asynccontextmanager
 import uuid
 import shutil
 import os
+import traceback
 
 from database import get_db, init_db, User, Job, JobStatus
 from firebase_auth import get_current_user
@@ -63,6 +64,38 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Global exception handler to ensure CORS headers are sent even on errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Catch all exceptions and return proper CORS-enabled error responses
+    This ensures CORS headers are added even when endpoints fail
+    """
+    # Log the full exception for debugging
+    print(f"❌ Unhandled exception in {request.method} {request.url.path}:")
+    print(f"   Error: {type(exc).__name__}: {str(exc)}")
+    traceback.print_exc()
+
+    # Determine status code
+    if isinstance(exc, HTTPException):
+        status_code = exc.status_code
+        detail = exc.detail
+    else:
+        status_code = 500
+        detail = f"Internal server error: {str(exc)}"
+
+    # Return JSON response with CORS headers
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": detail},
+        headers={
+            "Access-Control-Allow-Origin": request.headers.get("origin", "*"),
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Health check endpoint
 @app.get("/")

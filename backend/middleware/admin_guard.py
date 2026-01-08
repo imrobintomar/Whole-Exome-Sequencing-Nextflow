@@ -10,6 +10,17 @@ from database_extensions import AdminUser
 from datetime import datetime
 from config import settings
 
+class AdminContext:
+    """Simple data class to hold admin information without SQLAlchemy session"""
+    def __init__(self, admin_user):
+        self.id = admin_user.id
+        self.firebase_uid = admin_user.firebase_uid
+        self.email = admin_user.email
+        self.is_super_admin = admin_user.is_super_admin
+        self.last_login = admin_user.last_login
+        self.created_at = admin_user.created_at
+
+
 async def require_admin(current_user = Depends(get_current_user)):
     """
     Dependency that enforces admin-only access
@@ -18,12 +29,11 @@ async def require_admin(current_user = Depends(get_current_user)):
     Admin users are identified by:
     1. Entry in admin_users table, OR
     2. Firebase UID in ADMIN_USER_UIDS environment variable
+
+    Returns: AdminContext object (not bound to any session)
     """
     db = SessionLocal()
     try:
-        # Debug logging
-        print(f"🔍 Admin check for user: {current_user.firebase_uid}")
-
         # Check database first
         admin = db.query(AdminUser).filter(
             AdminUser.firebase_uid == current_user.firebase_uid
@@ -33,15 +43,13 @@ async def require_admin(current_user = Depends(get_current_user)):
             # Update last login
             admin.last_login = datetime.utcnow()
             db.commit()
-            print(f"✅ Admin found in database: {current_user.email}")
-            return admin
+
+            # Return a simple data object that's not bound to the session
+            return AdminContext(admin)
 
         # Fallback: Check environment variable
         admin_uids_str = settings.ADMIN_USER_UIDS or ""
         admin_uids = [uid.strip() for uid in admin_uids_str.split(",") if uid.strip()]
-        print(f"📋 Admin UIDs from env: {admin_uids}")
-        print(f"🔑 Current user UID: {current_user.firebase_uid}")
-        print(f"✓ Match: {current_user.firebase_uid in admin_uids}")
 
         if current_user.firebase_uid in admin_uids:
             # Auto-create admin user entry
@@ -54,7 +62,9 @@ async def require_admin(current_user = Depends(get_current_user)):
             db.add(admin)
             db.commit()
             db.refresh(admin)
-            return admin
+
+            # Return a simple data object that's not bound to the session
+            return AdminContext(admin)
 
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

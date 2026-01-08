@@ -71,6 +71,7 @@ class ChatConversation(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String(128), nullable=False)
+    admin_id = Column(String(128), nullable=True)  # Admin assigned to conversation
     job_id = Column(String(36), nullable=True)
     subject = Column(String(200), nullable=True)
     status = Column(String(20), default='open')  # open, resolved, closed

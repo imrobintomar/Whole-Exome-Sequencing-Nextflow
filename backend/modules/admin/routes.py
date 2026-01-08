@@ -253,13 +253,21 @@ async def update_user_subscription(
     """
     Update user subscription plan (admin only)
     """
+    print(f"🔧 Admin subscription update request:")
+    print(f"   User UID: {user_uid}")
+    print(f"   Plan name: {plan_name}")
+    print(f"   Admin: {admin.firebase_uid}")
+
     admin_firebase_uid = admin.firebase_uid
     db = SessionLocal()
     try:
         # Verify user exists
         user = db.query(User).filter(User.firebase_uid == user_uid).first()
         if not user:
+            print(f"❌ User not found: {user_uid}")
             raise HTTPException(status_code=404, detail="User not found")
+
+        print(f"✓ User found: {user.email}")
 
         # Get plan by name (case insensitive)
         plan = db.query(SubscriptionPlan).filter(
@@ -267,10 +275,17 @@ async def update_user_subscription(
         ).first()
 
         if not plan:
+            # List available plans for debugging
+            all_plans = db.query(SubscriptionPlan).all()
+            available_plans = [p.name for p in all_plans]
+            print(f"❌ Plan '{plan_name}' not found")
+            print(f"   Available plans: {available_plans}")
             raise HTTPException(
                 status_code=404,
-                detail=f"Plan '{plan_name}' not found. Available: Free, Basic, Pro, Enterprise"
+                detail=f"Plan '{plan_name}' not found. Available: {', '.join(available_plans) if available_plans else 'None - run database migration'}"
             )
+
+        print(f"✓ Plan found: {plan.name} (ID: {plan.id})")
 
         # Check if user has existing subscription
         subscription = db.query(Subscription).filter(
@@ -341,6 +356,8 @@ async def update_user_subscription(
             }
         )
 
+        print(f"✅ Subscription updated successfully for {user.email}")
+
         return {
             "success": True,
             "subscription": {
@@ -355,6 +372,18 @@ async def update_user_subscription(
                 "current_period_end": subscription.current_period_end
             }
         }
+    except HTTPException:
+        # Re-raise HTTP exceptions (already handled)
+        raise
+    except Exception as e:
+        # Catch any other database or unexpected errors
+        print(f"❌ Unexpected error updating subscription: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update subscription: {str(e)}"
+        )
     finally:
         db.close()
 

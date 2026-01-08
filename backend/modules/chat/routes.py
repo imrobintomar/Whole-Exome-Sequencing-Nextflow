@@ -74,8 +74,8 @@ async def create_conversation(
         message = ChatMessage(
             conversation_id=conversation.id,
             sender_id=current_user.firebase_uid,
-            sender_type='user',
-            message=data.initial_message
+            sender_role='user',
+            message_text=data.initial_message
         )
         db.add(message)
 
@@ -163,8 +163,8 @@ async def get_conversation_messages(
             "messages": [
                 {
                     "id": msg.id,
-                    "sender_type": msg.sender_type,
-                    "message": msg.message,
+                    "sender_role": msg.sender_role,
+                    "message": msg.message_text,
                     "created_at": msg.created_at
                 }
                 for msg in messages
@@ -204,8 +204,8 @@ async def send_message(
         message = ChatMessage(
             conversation_id=conversation_id,
             sender_id=current_user.firebase_uid,
-            sender_type='user',
-            message=data.message
+            sender_role='user',
+            message_text=data.message
         )
         db.add(message)
 
@@ -343,9 +343,9 @@ async def admin_get_conversation_messages(
             "messages": [
                 {
                     "id": msg.id,
-                    "sender_type": msg.sender_type,
+                    "sender_role": msg.sender_role,
                     "sender_id": msg.sender_id,
-                    "message": msg.message,
+                    "message": msg.message_text,
                     "created_at": msg.created_at
                 }
                 for msg in messages
@@ -381,8 +381,8 @@ async def admin_send_message(
         message = ChatMessage(
             conversation_id=conversation_id,
             sender_id=admin.firebase_uid,
-            sender_type='admin',
-            message=data.message
+            sender_role='admin',
+            message_text=data.message
         )
         db.add(message)
 

@@ -536,7 +536,7 @@ export interface ChatConversation {
 
 export interface ChatMessage {
   id: number;
-  sender_type: 'user' | 'admin';
+  sender_role: 'user' | 'admin';
   sender_id?: string;
   message: string;
   created_at: string;
