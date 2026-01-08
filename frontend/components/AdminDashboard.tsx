@@ -421,15 +421,15 @@ export default function AdminDashboard() {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Memory</span>
                     <span className="font-medium">
-                      {stats.system.memory.used_gb.toFixed(1)} GB / {stats.system.memory.total_gb.toFixed(1)} GB ({stats.system.memory.usage_percent.toFixed(1)}%)
+                      {stats.system.memory.used_gb.toFixed(1)} GB / {stats.system.memory.total_gb.toFixed(1)} GB ({stats.system.memory.percent.toFixed(1)}%)
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        stats.system.memory.usage_percent > 80 ? 'bg-red-500' : stats.system.memory.usage_percent > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                        stats.system.memory.percent > 80 ? 'bg-red-500' : stats.system.memory.percent > 60 ? 'bg-yellow-500' : 'bg-green-500'
                       }`}
-                      style={{ width: `${stats.system.memory.usage_percent}%` }}
+                      style={{ width: `${stats.system.memory.percent}%` }}
                     ></div>
                   </div>
                 </div>
@@ -438,15 +438,15 @@ export default function AdminDashboard() {
                   <div className="flex justify-between text-sm mb-1">
                     <span className="text-gray-600">Disk</span>
                     <span className="font-medium">
-                      {stats.system.disk.used_gb.toFixed(1)} GB / {stats.system.disk.total_gb.toFixed(1)} GB ({stats.system.disk.usage_percent.toFixed(1)}%)
+                      {stats.system.disk.used_gb.toFixed(1)} GB / {stats.system.disk.total_gb.toFixed(1)} GB ({stats.system.disk.percent.toFixed(1)}%)
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        stats.system.disk.usage_percent > 80 ? 'bg-red-500' : stats.system.disk.usage_percent > 60 ? 'bg-yellow-500' : 'bg-green-500'
+                        stats.system.disk.percent > 80 ? 'bg-red-500' : stats.system.disk.percent > 60 ? 'bg-yellow-500' : 'bg-green-500'
                       }`}
-                      style={{ width: `${stats.system.disk.usage_percent}%` }}
+                      style={{ width: `${stats.system.disk.percent}%` }}
                     ></div>
                   </div>
                 </div>
