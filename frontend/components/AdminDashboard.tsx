@@ -458,7 +458,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="text-3xl font-bold text-blue-600">{stats.nextflow_processes}</div>
-                  <div className="text-sm text-gray-600 mt-1">Active Nextflow Processes</div>
+                  <div className="text-sm text-gray-600 mt-1">Active Processes</div>
                 </div>
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="text-3xl font-bold text-green-600">{stats.jobs.running}</div>

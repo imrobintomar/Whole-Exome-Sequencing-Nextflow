@@ -179,8 +179,8 @@ export default function Home() {
             <div>
               <h4 className="font-semibold text-slate-900 mb-4">Resources</h4>
               <ul className="space-y-2">
-                <li><a href="https://github.com" className="text-sm text-slate-600 hover:text-slate-900">Documentation</a></li>
-                <li><a href="https://github.com" className="text-sm text-slate-600 hover:text-slate-900">GitHub</a></li>
+                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">Documentation</a></li>
+                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">GitHub</a></li>
                 <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">API Reference</a></li>
               </ul>
             </div>

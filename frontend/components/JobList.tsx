@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { jobApi, Job } from '@/lib/api';
 import { format } from 'date-fns';
-import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3 } from 'lucide-react';
+import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3, X } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -29,6 +29,8 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
   const [error, setError] = useState('');
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [processingActions, setProcessingActions] = useState<Set<string>>(new Set());
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [sideMenuOpen, setSideMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchJobs();
@@ -147,6 +149,16 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
         return next;
       });
     }
+  };
+
+  const openSideMenu = (job: Job) => {
+    setSelectedJob(job);
+    setSideMenuOpen(true);
+  };
+
+  const closeSideMenu = () => {
+    setSideMenuOpen(false);
+    setTimeout(() => setSelectedJob(null), 300); // Delay clearing to allow animation
   };
 
   if (loading) {
@@ -279,35 +291,15 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
                       {/* Actions for Completed Jobs */}
                       {job.status === 'completed' && (
                         <div className="space-y-2">
-                          <div className="flex flex-wrap gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => onVariantsClick?.(job.job_id)}
-                              className="flex-1 min-w-[120px]"
-                              size="sm"
-                            >
-                              <BarChart3 className="mr-2 h-4 w-4" />
-                              Visualize
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => onIGVClick?.(job.job_id, job.sample_name)}
-                              className="flex-1 min-w-[120px]"
-                              size="sm"
-                            >
-                              <Microscope className="mr-2 h-4 w-4" />
-                              IGV
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => onClassifyClick?.(job.job_id, job.sample_name)}
-                              className="flex-1 min-w-[120px]"
-                              size="sm"
-                            >
-                              <FlaskConical className="mr-2 h-4 w-4" />
-                              Classify
-                            </Button>
-                          </div>
+                          <Button
+                            variant="outline"
+                            onClick={() => openSideMenu(job)}
+                            className="w-full"
+                            size="sm"
+                          >
+                            <BarChart3 className="mr-2 h-4 w-4" />
+                            Analysis Tools
+                          </Button>
                           <div className="grid grid-cols-2 gap-2">
                             <Button
                               variant="outline"
@@ -475,45 +467,13 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
                       ) : job.status === 'completed' ? (
                         <div className="flex justify-end gap-2">
                           <Button
-                            variant="ghost"
-                            onClick={() => handleRerun(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2"
-                            title="Rerun Pipeline"
+                            variant="outline"
+                            onClick={() => openSideMenu(job)}
+                            className="h-8 px-3"
+                            title="Analysis Tools"
                           >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <RotateCcw className="mr-1 h-3 w-3" />
-                            )}
-                            Rerun
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => onVariantsClick?.(job.job_id)}
-                            className="h-8 px-2"
-                            title="Variant Analysis & Visualization"
-                          >
-                            <BarChart3 className="mr-1 h-3 w-3" />
-                            Visualize
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => onIGVClick?.(job.job_id, job.sample_name)}
-                            className="h-8 px-2"
-                            title="View in Genome Browser"
-                          >
-                            <Microscope className="mr-1 h-3 w-3" />
-                            IGV
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => onClassifyClick?.(job.job_id, job.sample_name)}
-                            className="h-8 px-2"
-                            title="ACMG Classification"
-                          >
-                            <FlaskConical className="mr-1 h-3 w-3" />
-                            Classify
+                            <BarChart3 className="mr-1 h-4 w-4" />
+                            Analysis
                           </Button>
                           <Button
                             variant="ghost"
@@ -567,6 +527,20 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
                             )}
                             TSV
                           </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleRerun(job.job_id)}
+                            disabled={processingActions.has(job.job_id)}
+                            className="h-8 px-2"
+                            title="Rerun Pipeline"
+                          >
+                            {processingActions.has(job.job_id) ? (
+                              <Loader className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <RotateCcw className="mr-1 h-3 w-3" />
+                            )}
+                            Rerun
+                          </Button>
                         </div>
                       ) : job.error_message ? (
                         <p className="text-xs text-destructive">{job.error_message}</p>
@@ -583,6 +557,212 @@ export default function JobList({ onClassifyClick, onIGVClick, onVariantsClick }
           )}
         </CardContent>
       </Card>
+
+      {/* Side Menu for Analysis Tools */}
+      {sideMenuOpen && selectedJob && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-40 transition-opacity"
+            onClick={closeSideMenu}
+          />
+
+          {/* Side Panel */}
+          <div className="fixed right-0 top-0 h-full w-full sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 z-10">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold mb-1">Analysis Tools</h3>
+                  <p className="text-sm opacity-90">{selectedJob.sample_name}</p>
+                </div>
+                <button
+                  onClick={closeSideMenu}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Job Info Card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Job Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Status:</span>
+                    <Badge variant={getStatusBadgeVariant(selectedJob.status)}>
+                      {selectedJob.status}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Submitted:</span>
+                    <span className="font-medium">
+                      {format(new Date(selectedJob.created_at), 'PPp')}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Analysis Actions */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Analysis Options
+                </h4>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto py-4"
+                  onClick={() => {
+                    onVariantsClick?.(selectedJob.job_id);
+                    closeSideMenu();
+                  }}
+                >
+                  <div className="flex items-start gap-3 text-left">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <BarChart3 className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">Visualize Variants</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Interactive variant analysis and visualization
+                      </div>
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto py-4"
+                  onClick={() => {
+                    onIGVClick?.(selectedJob.job_id, selectedJob.sample_name);
+                    closeSideMenu();
+                  }}
+                >
+                  <div className="flex items-start gap-3 text-left">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Microscope className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">IGV Browser</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        View alignments in Integrative Genomics Viewer
+                      </div>
+                    </div>
+                  </div>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full justify-start h-auto py-4"
+                  onClick={() => {
+                    onClassifyClick?.(selectedJob.job_id, selectedJob.sample_name);
+                    closeSideMenu();
+                  }}
+                >
+                  <div className="flex items-start gap-3 text-left">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <FlaskConical className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="font-semibold">ACMG Classification</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Classify variants using ACMG guidelines
+                      </div>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Download Section */}
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  Download Files
+                </h4>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(selectedJob.job_id, 'bam')}
+                    disabled={downloadingFiles.has(`${selectedJob.job_id}-bam`)}
+                    size="sm"
+                  >
+                    {downloadingFiles.has(`${selectedJob.job_id}-bam`) ? (
+                      <Loader className="mr-2 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3 w-3" />
+                    )}
+                    BAM
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(selectedJob.job_id, 'raw_vcf')}
+                    disabled={downloadingFiles.has(`${selectedJob.job_id}-raw_vcf`)}
+                    size="sm"
+                  >
+                    {downloadingFiles.has(`${selectedJob.job_id}-raw_vcf`) ? (
+                      <Loader className="mr-2 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3 w-3" />
+                    )}
+                    VCF
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(selectedJob.job_id, 'annotated_vcf')}
+                    disabled={downloadingFiles.has(`${selectedJob.job_id}-annotated_vcf`)}
+                    size="sm"
+                  >
+                    {downloadingFiles.has(`${selectedJob.job_id}-annotated_vcf`) ? (
+                      <Loader className="mr-2 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3 w-3" />
+                    )}
+                    Annotated
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(selectedJob.job_id, 'filtered_tsv')}
+                    disabled={downloadingFiles.has(`${selectedJob.job_id}-filtered_tsv`)}
+                    size="sm"
+                  >
+                    {downloadingFiles.has(`${selectedJob.job_id}-filtered_tsv`) ? (
+                      <Loader className="mr-2 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-2 h-3 w-3" />
+                    )}
+                    TSV
+                  </Button>
+                </div>
+              </div>
+
+              {/* Rerun Section */}
+              <div className="pt-4 border-t">
+                <Button
+                  variant="ghost"
+                  onClick={() => {
+                    handleRerun(selectedJob.job_id);
+                    closeSideMenu();
+                  }}
+                  disabled={processingActions.has(selectedJob.job_id)}
+                  className="w-full"
+                >
+                  {processingActions.has(selectedJob.job_id) ? (
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                  )}
+                  Rerun Pipeline
+                </Button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
