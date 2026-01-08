@@ -330,6 +330,45 @@ def resume_job(
 
     return {"message": "Pipeline resume started", "job_id": job_id}
 
+@app.delete("/jobs/{job_id}")
+def delete_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a job and its associated files (user can only delete their own jobs)"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    # Cancel if running
+    if job.status == JobStatus.RUNNING:
+        try:
+            runner = PipelineRunner(job, db)
+            runner.cancel_pipeline()
+        except Exception as e:
+            print(f"Warning: Failed to cancel running job before deletion: {e}")
+
+    # Delete associated files
+    try:
+        # Delete upload directory
+        upload_dir = Path(settings.UPLOAD_DIR) / job_id
+        if upload_dir.exists():
+            shutil.rmtree(upload_dir)
+
+        # Delete results directory
+        results_dir = Path(settings.RESULTS_DIR) / job_id
+        if results_dir.exists():
+            shutil.rmtree(results_dir)
+    except Exception as e:
+        print(f"Warning: Failed to delete some files for job {job_id}: {e}")
+
+    # Delete database record
+    db.delete(job)
+    db.commit()
+
+    return {"message": "Job deleted successfully", "job_id": job_id}
+
 # Download result file
 @app.get("/jobs/{job_id}/download/{file_type}")
 def download_file(
@@ -488,6 +527,93 @@ def get_acmg_secondary_findings(current_user: User = Depends(get_current_user)):
     """Get ACMG Secondary Findings v3.2 gene list"""
     genes = GenePanelManager.get_acmg_secondary_findings_genes()
     return {"genes": genes, "count": len(genes), "version": "3.2"}
+
+@app.post("/jobs/{job_id}/apply-panel")
+async def apply_gene_panel(
+    job_id: str,
+    gene_filter: GeneListFilter,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply gene panel filter to job's TSV and return filtered variants with statistics
+    """
+    import pandas as pd
+
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job not completed yet")
+
+    if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
+        raise HTTPException(status_code=404, detail="TSV file not found")
+
+    try:
+        # Read TSV
+        df = pd.read_csv(job.filtered_tsv_path, sep='\t')
+        genes = gene_filter.genes
+
+        # Filter by genes using GenePanelManager
+        filtered_df = GenePanelManager.filter_variants_by_genes(df, genes)
+
+        # Calculate statistics
+        total_variants = len(filtered_df)
+
+        # Chromosome distribution
+        chr_dist = {}
+        if 'Chr' in filtered_df.columns:
+            chr_counts = filtered_df['Chr'].value_counts().to_dict()
+            chr_dist = {str(k): int(v) for k, v in chr_counts.items()}
+
+        # Gene distribution (top 20)
+        gene_dist = {}
+        gene_column = 'Gene.refGeneWithVer'
+        if gene_column in filtered_df.columns:
+            gene_counts = filtered_df[gene_column].value_counts().head(20).to_dict()
+            gene_dist = {str(k): int(v) for k, v in gene_counts.items()}
+
+        # Functional impact
+        func_impact = {}
+        if 'Func.refGeneWithVer' in filtered_df.columns:
+            func_counts = filtered_df['Func.refGeneWithVer'].value_counts().to_dict()
+            func_impact = {str(k): int(v) for k, v in func_counts.items()}
+
+        # Exonic subcategories
+        exonic_subcat = {}
+        if 'ExonicFunc.refGeneWithVer' in filtered_df.columns:
+            exonic_counts = filtered_df['ExonicFunc.refGeneWithVer'].value_counts().to_dict()
+            exonic_subcat = {str(k): int(v) for k, v in exonic_counts.items()}
+
+        # Clinical significance
+        clinical_sig = {}
+        if 'CLNSIG' in filtered_df.columns:
+            clinical_counts = filtered_df['CLNSIG'].value_counts().to_dict()
+            clinical_sig = {str(k): int(v) for k, v in clinical_counts.items()}
+
+        # Convert filtered variants to list of dicts (limit to first 1000 for performance)
+        variants_list = filtered_df.head(1000).to_dict('records')
+
+        return {
+            "job_id": job_id,
+            "sample_name": job.sample_name,
+            "applied_genes": genes,
+            "gene_count": len(genes),
+            "total_variants": total_variants,
+            "showing_variants": min(1000, total_variants),
+            "variants": variants_list,
+            "statistics": {
+                "chromosome_distribution": chr_dist,
+                "gene_distribution": gene_dist,
+                "functional_impact": func_impact,
+                "exonic_subcategories": exonic_subcat,
+                "clinical_significance": clinical_sig
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to apply gene panel: {str(e)}")
 
 # ACMG Classification Endpoint
 @app.post("/classify/acmg")

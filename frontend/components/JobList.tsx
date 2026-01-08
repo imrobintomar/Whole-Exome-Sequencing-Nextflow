@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { jobApi, Job } from '@/lib/api';
 import { format } from 'date-fns';
-import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3, X } from 'lucide-react';
+import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3, X, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -152,6 +152,26 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
     }
   };
 
+  const handleDelete = async (jobId: string) => {
+    if (processingActions.has(jobId)) return;
+    if (!confirm('Are you sure you want to delete this job? This will permanently remove all associated files and data.')) return;
+
+    try {
+      setProcessingActions(prev => new Set(prev).add(jobId));
+      await jobApi.deleteJob(jobId);
+      await fetchJobs(); // Refresh jobs list
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      alert(`Delete failed: ${err.response?.data?.detail || err.message || 'Unknown error'}`);
+    } finally {
+      setProcessingActions(prev => {
+        const next = new Set(prev);
+        next.delete(jobId);
+        return next;
+      });
+    }
+  };
+
   const openSideMenu = (job: Job) => {
     setSelectedJob(job);
     setSideMenuOpen(true);
@@ -266,7 +286,7 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                             variant="outline"
                             onClick={() => handleResume(job.job_id)}
                             disabled={processingActions.has(job.job_id)}
-                            className="flex-1 min-w-[120px]"
+                            className="flex-1 min-w-[100px]"
                             size="sm"
                           >
                             {processingActions.has(job.job_id) ? (
@@ -280,7 +300,7 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                             variant="outline"
                             onClick={() => handleRerun(job.job_id)}
                             disabled={processingActions.has(job.job_id)}
-                            className="flex-1 min-w-[120px]"
+                            className="flex-1 min-w-[100px]"
                             size="sm"
                           >
                             {processingActions.has(job.job_id) ? (
@@ -290,80 +310,31 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                             )}
                             Rerun
                           </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDelete(job.job_id)}
+                            disabled={processingActions.has(job.job_id)}
+                            className="flex-1 min-w-[100px]"
+                            size="sm"
+                          >
+                            {processingActions.has(job.job_id) ? (
+                              <Loader className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete
+                          </Button>
                         </div>
                       )}
 
                       {/* Actions for Completed Jobs */}
                       {job.status === 'completed' && (
-                        <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             variant="outline"
-                            onClick={() => openSideMenu(job)}
-                            className="w-full"
-                            size="sm"
-                          >
-                            <BarChart3 className="mr-2 h-4 w-4" />
-                            Analysis Tools
-                          </Button>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDownload(job.job_id, 'bam')}
-                              disabled={downloadingFiles.has(`${job.job_id}-bam`)}
-                              size="sm"
-                            >
-                              {downloadingFiles.has(`${job.job_id}-bam`) ? (
-                                <Loader className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <Download className="mr-2 h-3 w-3" />
-                              )}
-                              BAM
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDownload(job.job_id, 'raw_vcf')}
-                              disabled={downloadingFiles.has(`${job.job_id}-raw_vcf`)}
-                              size="sm"
-                            >
-                              {downloadingFiles.has(`${job.job_id}-raw_vcf`) ? (
-                                <Loader className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <Download className="mr-2 h-3 w-3" />
-                              )}
-                              VCF
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDownload(job.job_id, 'annotated_vcf')}
-                              disabled={downloadingFiles.has(`${job.job_id}-annotated_vcf`)}
-                              size="sm"
-                            >
-                              {downloadingFiles.has(`${job.job_id}-annotated_vcf`) ? (
-                                <Loader className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <Download className="mr-2 h-3 w-3" />
-                              )}
-                              Annotated
-                            </Button>
-                            <Button
-                              variant="outline"
-                              onClick={() => handleDownload(job.job_id, 'filtered_tsv')}
-                              disabled={downloadingFiles.has(`${job.job_id}-filtered_tsv`)}
-                              size="sm"
-                            >
-                              {downloadingFiles.has(`${job.job_id}-filtered_tsv`) ? (
-                                <Loader className="mr-2 h-3 w-3 animate-spin" />
-                              ) : (
-                                <Download className="mr-2 h-3 w-3" />
-                              )}
-                              TSV
-                            </Button>
-                          </div>
-                          <Button
-                            variant="ghost"
                             onClick={() => handleRerun(job.job_id)}
                             disabled={processingActions.has(job.job_id)}
-                            className="w-full"
+                            className="flex-1 min-w-[100px]"
                             size="sm"
                           >
                             {processingActions.has(job.job_id) ? (
@@ -371,7 +342,21 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                             ) : (
                               <RotateCcw className="mr-2 h-4 w-4" />
                             )}
-                            Rerun Pipeline
+                            Rerun
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => handleDelete(job.job_id)}
+                            disabled={processingActions.has(job.job_id)}
+                            className="flex-1 min-w-[100px]"
+                            size="sm"
+                          >
+                            {processingActions.has(job.job_id) ? (
+                              <Loader className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="mr-2 h-4 w-4" />
+                            )}
+                            Delete
                           </Button>
                         </div>
                       )}
@@ -472,70 +457,23 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                             )}
                             Rerun
                           </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleDelete(job.job_id)}
+                            disabled={processingActions.has(job.job_id)}
+                            className="h-8 px-2 text-destructive hover:text-destructive"
+                            title="Delete Job"
+                          >
+                            {processingActions.has(job.job_id) ? (
+                              <Loader className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="mr-1 h-3 w-3" />
+                            )}
+                            Delete
+                          </Button>
                         </div>
                       ) : job.status === 'completed' ? (
                         <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => openSideMenu(job)}
-                            className="h-8 px-3"
-                            title="Analysis Tools"
-                          >
-                            <BarChart3 className="mr-1 h-4 w-4" />
-                            Analysis
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDownload(job.job_id, 'bam')}
-                            disabled={downloadingFiles.has(`${job.job_id}-bam`)}
-                            className="h-8 px-2"
-                          >
-                            {downloadingFiles.has(`${job.job_id}-bam`) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Download className="mr-1 h-3 w-3" />
-                            )}
-                            BAM
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDownload(job.job_id, 'raw_vcf')}
-                            disabled={downloadingFiles.has(`${job.job_id}-raw_vcf`)}
-                            className="h-8 px-2"
-                          >
-                            {downloadingFiles.has(`${job.job_id}-raw_vcf`) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Download className="mr-1 h-3 w-3" />
-                            )}
-                            VCF
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDownload(job.job_id, 'annotated_vcf')}
-                            disabled={downloadingFiles.has(`${job.job_id}-annotated_vcf`)}
-                            className="h-8 px-2"
-                          >
-                            {downloadingFiles.has(`${job.job_id}-annotated_vcf`) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Download className="mr-1 h-3 w-3" />
-                            )}
-                            Annotated
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDownload(job.job_id, 'filtered_tsv')}
-                            disabled={downloadingFiles.has(`${job.job_id}-filtered_tsv`)}
-                            className="h-8 px-2"
-                          >
-                            {downloadingFiles.has(`${job.job_id}-filtered_tsv`) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Download className="mr-1 h-3 w-3" />
-                            )}
-                            TSV
-                          </Button>
                           <Button
                             variant="ghost"
                             onClick={() => handleRerun(job.job_id)}
@@ -549,6 +487,20 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                               <RotateCcw className="mr-1 h-3 w-3" />
                             )}
                             Rerun
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            onClick={() => handleDelete(job.job_id)}
+                            disabled={processingActions.has(job.job_id)}
+                            className="h-8 px-2 text-destructive hover:text-destructive"
+                            title="Delete Job"
+                          >
+                            {processingActions.has(job.job_id) ? (
+                              <Loader className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="mr-1 h-3 w-3" />
+                            )}
+                            Delete
                           </Button>
                         </div>
                       ) : job.error_message ? (

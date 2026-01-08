@@ -13,6 +13,7 @@ import GenePanelFilter from './GenePanelFilter';
 import ACMGClassificationPage from './ACMGClassificationPage';
 import IGVBrowserPage from './IGVBrowserPage';
 import VariantVisualizationPage from './VariantVisualizationPage';
+import GenePanelPage from './GenePanelPage';
 import SupportChat from './SupportChat';
 
 interface DashboardProps {
@@ -20,7 +21,7 @@ interface DashboardProps {
   onLogout: () => void;
 }
 
-type ViewType = 'overview' | 'upload' | 'jobs' | 'job-details' | 'analytics' | 'panels' | 'acmg' | 'igv' | 'variants' | 'support';
+type ViewType = 'overview' | 'upload' | 'jobs' | 'job-details' | 'analytics' | 'panels' | 'gene-panel' | 'acmg' | 'igv' | 'variants' | 'support';
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
@@ -29,6 +30,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [selectedJobForACMG, setSelectedJobForACMG] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForIGV, setSelectedJobForIGV] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForVariants, setSelectedJobForVariants] = useState<{ jobId: string; sampleName: string } | null>(null);
+  const [selectedJobForGenePanel, setSelectedJobForGenePanel] = useState<string | null>(null);
 
   const handleJobSubmitted = () => {
     setCurrentView('jobs');
@@ -59,12 +61,18 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setCurrentView('variants');
   };
 
+  const handleGenePanelClick = (jobId: string) => {
+    setSelectedJobForGenePanel(jobId);
+    setCurrentView('gene-panel');
+  };
+
   const handleBackToJobs = () => {
     setCurrentView('jobs');
     setSelectedJobId(null);
     setSelectedJobForACMG(null);
     setSelectedJobForIGV(null);
     setSelectedJobForVariants(null);
+    setSelectedJobForGenePanel(null);
   };
 
   return (
@@ -102,6 +110,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               onClassifyClick={handleClassifyClick}
               onIGVClick={handleIGVClick}
               onVariantsClick={(jobId) => handleVariantsClick(jobId)}
+              onGenePanelClick={handleGenePanelClick}
             />
           )}
           {currentView === 'analytics' && (
@@ -137,6 +146,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
             <VariantVisualizationPage
               jobId={selectedJobForVariants.jobId}
               sampleName={selectedJobForVariants.sampleName}
+              onBack={handleBackToJobs}
+            />
+          )}
+          {currentView === 'gene-panel' && selectedJobForGenePanel && (
+            <GenePanelPage
+              jobId={selectedJobForGenePanel}
               onBack={handleBackToJobs}
             />
           )}

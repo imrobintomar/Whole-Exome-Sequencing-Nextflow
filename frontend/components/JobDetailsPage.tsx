@@ -23,6 +23,7 @@ import {
   PlayCircle,
   RotateCcw,
   XOctagon,
+  Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -37,6 +38,7 @@ interface JobDetailsPageProps {
   onClassifyClick?: (jobId: string, sampleName: string) => void;
   onIGVClick?: (jobId: string, sampleName: string) => void;
   onVariantsClick?: (jobId: string) => void;
+  onGenePanelClick?: (jobId: string) => void;
 }
 
 export default function JobDetailsPage({
@@ -45,6 +47,7 @@ export default function JobDetailsPage({
   onClassifyClick,
   onIGVClick,
   onVariantsClick,
+  onGenePanelClick,
 }: JobDetailsPageProps) {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
@@ -415,7 +418,7 @@ export default function JobDetailsPage({
 
         {/* Analysis Tab */}
         <TabsContent value="analysis" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => onVariantsClick?.(jobId)}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -466,6 +469,25 @@ export default function JobDetailsPage({
                 <Button className="w-full" disabled={job.status !== 'completed'}>
                   <Eye className="h-4 w-4 mr-2" />
                   Open IGV
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:border-primary transition-colors"
+              onClick={() => onGenePanelClick?.(jobId)}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="h-5 w-5 text-primary" />
+                  Gene Panel Filter
+                </CardTitle>
+                <CardDescription>Filter variants by gene panels (ACMG SF, PanelApp)</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full" disabled={job.status !== 'completed'}>
+                  <Eye className="h-4 w-4 mr-2" />
+                  Apply Gene Panel
                 </Button>
               </CardContent>
             </Card>

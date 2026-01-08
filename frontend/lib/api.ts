@@ -154,6 +154,11 @@ export const jobApi = {
     const response = await api.post(`/jobs/${jobId}/resume`);
     return response.data;
   },
+
+  deleteJob: async (jobId: string) => {
+    const response = await api.delete(`/jobs/${jobId}`);
+    return response.data;
+  },
 };
 
 // Convenience exports for direct access
@@ -164,6 +169,7 @@ export const downloadFile = jobApi.downloadFile;
 export const cancelJob = jobApi.cancelJob;
 export const rerunJob = jobApi.rerunJob;
 export const resumeJob = jobApi.resumeJob;
+export const deleteJob = jobApi.deleteJob;
 
 // ACMG Classification API
 export interface ACMGClassification {
@@ -236,6 +242,23 @@ export interface GenePanelGenes {
   count: number;
 }
 
+export interface GenePanelResult {
+  job_id: string;
+  sample_name: string;
+  applied_genes: string[];
+  gene_count: number;
+  total_variants: number;
+  showing_variants: number;
+  variants: Record<string, any>[];
+  statistics: {
+    chromosome_distribution: Record<string, number>;
+    gene_distribution: Record<string, number>;
+    functional_impact: Record<string, number>;
+    exonic_subcategories: Record<string, number>;
+    clinical_significance: Record<string, number>;
+  };
+}
+
 export const panelApi = {
   searchPanels: async (query: string) => {
     const response = await api.get<{ results: GenePanel[] }>('/panels/search', {
@@ -253,6 +276,13 @@ export const panelApi = {
 
   getAcmgSecondaryFindings: async () => {
     const response = await api.get<{ genes: string[]; count: number; version: string }>('/panels/acmg-sf');
+    return response.data;
+  },
+
+  applyGenePanel: async (jobId: string, genes: string[]) => {
+    const response = await api.post<GenePanelResult>(`/jobs/${jobId}/apply-panel`, {
+      genes: genes
+    });
     return response.data;
   },
 
