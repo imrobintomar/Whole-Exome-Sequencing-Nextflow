@@ -13,8 +13,11 @@ import LandingPage from '@/components/LandingPage';
 import AboutPage from '@/components/AboutPage';
 import ResearchPage from '@/components/ResearchPage';
 import ContactPage from '@/components/ContactPage';
+import PrivacyPolicyPage from '@/components/PrivacyPolicyPage';
+import TermsOfServicePage from '@/components/TermsOfServicePage';
+import DisclaimerPage from '@/components/DisclaimerPage';
 
-type PageType = 'home' | 'about' | 'research' | 'contact' | 'signin';
+type PageType = 'home' | 'about' | 'research' | 'contact' | 'signin' | 'privacy' | 'terms' | 'disclaimer';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -59,6 +62,12 @@ export default function Home() {
         return <ResearchPage />;
       case 'contact':
         return <ContactPage />;
+      case 'privacy':
+        return <PrivacyPolicyPage onBack={() => setCurrentPage('home')} />;
+      case 'terms':
+        return <TermsOfServicePage onBack={() => setCurrentPage('home')} />;
+      case 'disclaimer':
+        return <DisclaimerPage onBack={() => setCurrentPage('home')} />;
       case 'signin':
         return (
           <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -185,9 +194,9 @@ export default function Home() {
       <div>
         <h4 className="font-semibold text-white mb-4">Legal</h4>
         <ul className="space-y-2">
-          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Privacy Policy</a></li>
-          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Terms of Service</a></li>
-          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Disclaimer</a></li>
+          <li><button onClick={() => setCurrentPage('privacy')} className="text-sm text-slate-300 hover:text-white">Privacy Policy</button></li>
+          <li><button onClick={() => setCurrentPage('terms')} className="text-sm text-slate-300 hover:text-white">Terms of Service</button></li>
+          <li><button onClick={() => setCurrentPage('disclaimer')} className="text-sm text-slate-300 hover:text-white">Disclaimer</button></li>
         </ul>
       </div>
 

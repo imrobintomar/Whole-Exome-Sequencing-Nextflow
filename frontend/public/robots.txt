@@ -1,0 +1,33 @@
+# robots.txt for ATGCFLOW - Whole Exome Sequencing Analysis Platform
+
+# Allow all search engines to crawl public pages
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /jobs/
+
+# Sitemap location
+Sitemap: https://atgcflow.com/sitemap.xml
+
+# Crawl delay for polite crawlers (in seconds)
+Crawl-delay: 1
+
+# Specific rules for major search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /jobs/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /jobs/
+
+User-agent: Slurp
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /jobs/
