@@ -159,6 +159,15 @@ export const jobApi = {
     const response = await api.delete(`/jobs/${jobId}`);
     return response.data;
   },
+
+  checkFileAvailability: async (jobId: string, fileType: 'bam' | 'vcf') => {
+    try {
+      const response = await api.get(`/jobs/${jobId}/files/${fileType}`);
+      return response.data;
+    } catch (error) {
+      return null;
+    }
+  },
 };
 
 // Convenience exports for direct access

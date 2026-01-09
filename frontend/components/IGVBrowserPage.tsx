@@ -70,8 +70,8 @@ export default function IGVBrowserPage({ jobId, sampleName, onBack }: IGVBrowser
 
       // Try to add BAM track if available
       try {
-        const bamResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/jobs/${jobId}/files/bam`);
-        if (bamResponse.ok) {
+        const bamResponse = await jobApi.checkFileAvailability(jobId, 'bam');
+        if (bamResponse) {
           options.tracks.push({
             name: `${sampleName} Alignments`,
             type: 'alignment',
@@ -87,8 +87,8 @@ export default function IGVBrowserPage({ jobId, sampleName, onBack }: IGVBrowser
 
       // Try to add VCF track if available
       try {
-        const vcfResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/jobs/${jobId}/files/vcf`);
-        if (vcfResponse.ok) {
+        const vcfResponse = await jobApi.checkFileAvailability(jobId, 'vcf');
+        if (vcfResponse) {
           options.tracks.push({
             name: `${sampleName} Variants`,
             type: 'variant',

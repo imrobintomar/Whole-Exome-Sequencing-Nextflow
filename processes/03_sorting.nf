@@ -14,14 +14,24 @@ process sortSam {
         tuple val(sample_id), path("${sample_id}.sorted.bam"), path("${sample_id}.sorted.bam.bai")
 
     script:
+        // Calculate safe Java heap size (90% of allocated memory)
+        def avail_mem_mb = (task.memory.toMega() * 0.9).toInteger()
         """
-        gatk SortSam \
+        mkdir -p tmp_${sample_id}
+
+        gatk --java-options "-Xmx${avail_mem_mb}m -XX:+UseParallelGC -Djava.io.tmpdir=./tmp_${sample_id}" \
+            SortSam \
             -I ${bam_in} \
             -O ${sample_id}.sorted.bam \
             -SO coordinate \
-            --CREATE_INDEX true
+            --CREATE_INDEX false \
+            --TMP_DIR ./tmp_${sample_id}
 
-        mv ${sample_id}.sorted.bai ${sample_id}.sorted.bam.bai
+        # Use samtools for reliable index naming
+        samtools index ${sample_id}.sorted.bam
+
+        # Cleanup
+        rm -rf tmp_${sample_id}
         """
 }
 

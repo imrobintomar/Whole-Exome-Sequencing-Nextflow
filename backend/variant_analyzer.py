@@ -35,7 +35,14 @@ class VariantAnalyzer:
         if not self.tsv_path.exists():
             raise FileNotFoundError(f"TSV file not found: {self.tsv_path}")
 
-        self.df = pd.read_csv(self.tsv_path, sep='\t', low_memory=False)
+        # Handle encoding and parsing issues from pipeline output
+        try:
+            self.df = pd.read_csv(self.tsv_path, sep='\t', low_memory=False, encoding='utf-8', on_bad_lines='skip')
+        except UnicodeDecodeError:
+            self.df = pd.read_csv(self.tsv_path, sep='\t', low_memory=False, encoding='latin1', on_bad_lines='skip')
+        except Exception:
+            # Last resort: use Python engine with error handling
+            self.df = pd.read_csv(self.tsv_path, sep='\t', low_memory=False, encoding='latin1', on_bad_lines='skip', engine='python')
 
     def _is_snv(self, ref: str, alt: str) -> bool:
         """Check if variant is SNV (both REF and ALT are single nucleotides)"""

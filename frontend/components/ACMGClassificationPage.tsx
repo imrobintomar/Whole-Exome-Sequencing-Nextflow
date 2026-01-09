@@ -129,7 +129,7 @@ export default function ACMGClassificationPage({ jobId, sampleName, onBack }: AC
   const exportToCSV = () => {
     if (!result) return;
 
-    const headers = ['Position', 'Gene', 'Consequence', 'Classification', 'Evidence Summary', 'Met Criteria'];
+    const headers = ['UniqueID', 'Gene', 'Consequence', 'Classification', 'Evidence Summary', 'Met Criteria'];
     const rows = filteredVariants.map(v => [
       v.position,
       v.gene,
@@ -336,11 +336,13 @@ export default function ACMGClassificationPage({ jobId, sampleName, onBack }: AC
         </CardContent>
       </Card>
 
-      {/* Filters */}
+      {/* Variant Table with Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Variant Table</CardTitle>
-          <CardDescription>Classified variants with evidence summary</CardDescription>
+          <CardDescription>
+            Classified variants with evidence summary
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-4">
@@ -379,7 +381,7 @@ export default function ACMGClassificationPage({ jobId, sampleName, onBack }: AC
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]"></TableHead>
-                  <TableHead>Position</TableHead>
+                  <TableHead>UniqueID</TableHead>
                   <TableHead>Gene</TableHead>
                   <TableHead>Consequence</TableHead>
                   <TableHead>Classification</TableHead>

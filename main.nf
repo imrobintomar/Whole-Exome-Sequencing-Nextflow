@@ -30,7 +30,7 @@ include { baseRecalibrator } from './processes/05_bqsr.nf'
 include { applyBQSR } from './processes/05_bqsr.nf'
 include { haplotypeCaller } from './processes/06_variantcalling.nf'
 include { annovarAnnotate } from './processes/07_annotation.nf'
-include { convertToFinalTSV } from './processes/08_filtering.nf'
+include { addUniqueID } from './processes/08_filtering.nf'
 
 workflow {
     // Additional runtime validation check
@@ -95,6 +95,119 @@ workflow {
     file("${params.output_dir}/Germline_VCF").mkdirs()
     file("${params.output_dir}/logs").mkdirs()
 
+    // ═══════════════════════════════════════════════════════════════
+    // CRITICAL: Validate all required files exist before execution
+    // ═══════════════════════════════════════════════════════════════
+
+    // 1. Validate reference FASTA and indices
+    if (!file(params.reference).exists()) {
+        error """
+        ═══════════════════════════════════════════════════════════════
+        VALIDATION ERROR: Reference FASTA not found!
+        ═══════════════════════════════════════════════════════════════
+
+        Missing file: ${params.reference}
+
+        Please ensure the reference genome FASTA file exists.
+        ═══════════════════════════════════════════════════════════════
+        """
+    }
+
+    if (!file("${params.reference}.fai").exists()) {
+        error """
+        ═══════════════════════════════════════════════════════════════
+        VALIDATION ERROR: Reference index (.fai) not found!
+        ═══════════════════════════════════════════════════════════════
+
+        Missing file: ${params.reference}.fai
+
+        Please create the index by running:
+        samtools faidx ${params.reference}
+        ═══════════════════════════════════════════════════════════════
+        """
+    }
+
+    def dict_file = params.reference_dict ?: params.reference.replaceAll(/\.fa(sta)?$/, '.dict')
+    if (!file(dict_file).exists()) {
+        error """
+        ═══════════════════════════════════════════════════════════════
+        VALIDATION ERROR: Reference dictionary (.dict) not found!
+        ═══════════════════════════════════════════════════════════════
+
+        Missing file: ${dict_file}
+
+        Please create the dictionary by running:
+        gatk CreateSequenceDictionary -R ${params.reference}
+        ═══════════════════════════════════════════════════════════════
+        """
+    }
+
+    // 2. Validate known sites VCF files and indices
+    params.known_sites.each { vcf ->
+        if (!file(vcf).exists()) {
+            error """
+            ═══════════════════════════════════════════════════════════════
+            VALIDATION ERROR: Known sites VCF not found!
+            ═══════════════════════════════════════════════════════════════
+
+            Missing file: ${vcf}
+
+            Please ensure all known sites VCF files exist.
+            ═══════════════════════════════════════════════════════════════
+            """
+        }
+        if (!file("${vcf}.tbi").exists()) {
+            error """
+            ═══════════════════════════════════════════════════════════════
+            VALIDATION ERROR: Known sites VCF index (.tbi) not found!
+            ═══════════════════════════════════════════════════════════════
+
+            Missing file: ${vcf}.tbi
+
+            Please create the index by running:
+            tabix -p vcf ${vcf}
+            ═══════════════════════════════════════════════════════════════
+            """
+        }
+    }
+
+    // 3. Validate intervals file if provided (recommended for exome)
+    if (params.intervals && !file(params.intervals).exists()) {
+        error """
+        ═══════════════════════════════════════════════════════════════
+        VALIDATION ERROR: Intervals file not found!
+        ═══════════════════════════════════════════════════════════════
+
+        Missing file: ${params.intervals}
+
+        Please ensure the intervals/BED file exists, or set:
+        --intervals null
+
+        to analyze the whole genome (not recommended for exome).
+        ═══════════════════════════════════════════════════════════════
+        """
+    }
+
+    // 4. Warn if intervals not set for exome analysis
+    if (!params.intervals) {
+        log.warn """
+        ═══════════════════════════════════════════════════════════════
+        WARNING: No intervals file specified!
+        ═══════════════════════════════════════════════════════════════
+
+        For EXOME sequencing, you should specify target regions:
+        --intervals /path/to/exome_targets.bed
+
+        Without intervals:
+        - Analysis will be 60x SLOWER
+        - False positive rate will be HIGHER
+        - Resource usage will be EXCESSIVE
+
+        Only proceed if analyzing whole genome data.
+        ═══════════════════════════════════════════════════════════════
+        """
+    }
+
     // Log pipeline start
     log.info """
     ╔════════════════════════════════════════╗
@@ -105,12 +218,13 @@ workflow {
         Author:  Robin Tomar
         Email:   Aiimsgenomics@gmail.com
     ==========================================
-        
+
 
     Input Directory:     ${params.input_dir}
     Output Directory:    ${params.output_dir}
     Reference Genome:    ${params.reference}
-    
+    Intervals File:      ${params.intervals ?: 'NOT SET (whole genome mode)'}
+
     Pipeline started at: ${new Date()}
     """
 
@@ -162,11 +276,11 @@ workflow {
     // ANNOVAR annotation (single source of truth)
     annovar_txt = annovarAnnotate(vcf_raw)
 
-    // Convert to final TSV
-    final_tsv = convertToFinalTSV(annovar_txt)
+    // Add UniqueID to ANNOVAR output
+    final_output = addUniqueID(annovar_txt)
 
     // Pipeline completion message
-    final_tsv.subscribe {
+    final_output.subscribe {
         log.info "✓ Pipeline completed successfully at ${new Date()}"
     }
 }

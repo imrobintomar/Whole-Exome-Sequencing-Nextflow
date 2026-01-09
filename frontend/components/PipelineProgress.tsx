@@ -18,7 +18,6 @@ const PIPELINE_STEPS = [
   "Base Recalibration",
   "Applying BQSR",
   "Variant Calling",
-  "1000 Genomes Annotation",
   "ANNOVAR Annotation",
   "Filtering & Extraction",
   "Completed"

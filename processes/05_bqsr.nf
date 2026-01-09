@@ -12,13 +12,25 @@ process baseRecalibrator {
         def known_sites_str = params.known_sites
                                   .collect { "--known-sites ${it}" }
                                   .join(" ")
+        // Calculate safe Java heap size (90% of allocated memory)
+        def avail_mem_mb = (task.memory.toMega() * 0.9).toInteger()
+        // Add intervals if provided (critical for exome sequencing)
+        def intervals_arg = params.intervals ? "-L ${params.intervals}" : ""
 
         """
-        gatk BaseRecalibrator \
+        mkdir -p tmp_${sample_id}
+
+        gatk --java-options "-Xmx${avail_mem_mb}m -XX:+UseParallelGC -Djava.io.tmpdir=./tmp_${sample_id}" \
+            BaseRecalibrator \
             -R ${params.reference} \
             -I ${bam_file} \
+            ${intervals_arg} \
             ${known_sites_str} \
-            -O ${sample_id}_recall.table
+            -O ${sample_id}_recall.table \
+            --tmp-dir ./tmp_${sample_id}
+
+        # Cleanup
+        rm -rf tmp_${sample_id}
         """
 }
 
@@ -34,17 +46,24 @@ process applyBQSR {
         tuple val(sample_id), path("${sample_id}_recall.bam"), path("${sample_id}_recall.bam.bai")
 
     script:
+        // Calculate safe Java heap size (90% of allocated memory)
+        def avail_mem_mb = (task.memory.toMega() * 0.9).toInteger()
         """
-        gatk ApplyBQSR \
+        mkdir -p tmp_${sample_id}
+
+        gatk --java-options "-Xmx${avail_mem_mb}m -XX:+UseParallelGC -Djava.io.tmpdir=./tmp_${sample_id}" \
+            ApplyBQSR \
             -R ${params.reference} \
             -I ${bam_file} \
             --bqsr-recal-file ${recal_table} \
             -O ${sample_id}_recall.bam \
-            --create-output-bam-index true
+            --create-output-bam-index false \
+            --tmp-dir ./tmp_${sample_id}
 
-        # Ensure index has correct name
-        if [ -f ${sample_id}_recall.bai ]; then
-            mv ${sample_id}_recall.bai ${sample_id}_recall.bam.bai
-        fi
+        # Use samtools for reliable index naming
+        samtools index ${sample_id}_recall.bam
+
+        # Cleanup
+        rm -rf tmp_${sample_id}
         """
 }

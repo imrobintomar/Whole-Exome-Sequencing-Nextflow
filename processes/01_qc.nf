@@ -11,6 +11,7 @@ process fastpQC {
             -o ${sample_id}_1_filtered.fastq.gz \\
             -O ${sample_id}_2_filtered.fastq.gz \\
             --html ${sample_id}.html \\
-            -w 16
+            --json ${sample_id}.json \\
+            -w ${task.cpus}
         """
 }

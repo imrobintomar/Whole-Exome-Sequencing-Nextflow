@@ -53,9 +53,8 @@ class PipelineRunner:
             'baseRecalibrator': 'Base Recalibration',
             'applyBQSR': 'Applying BQSR',
             'haplotypeCaller': 'Variant Calling',
-            'snpsiftAnnotate1000G': '1000 Genomes Annotation',
             'annovarAnnotate': 'ANNOVAR Annotation',
-            'extractFilterFields': 'Filtering & Extraction'
+            'addUniqueID': 'Filtering & Extraction'
         }
 
         for keyword, step_name in step_keywords.items():
@@ -138,8 +137,8 @@ class PipelineRunner:
         raw_vcf = self.find_file(output_dir / "Germline_VCF", f"{sample}.vcf.gz")
         # New pipeline outputs ANNOVAR TXT instead of VCF
         annovar_txt = self.find_file(output_dir / "Germline_VCF", f"{sample}.annovar.hg38_multianno.txt")
-        # New pipeline outputs ${sample}_Final_.tsv
-        final_tsv = self.find_file(output_dir / "Germline_VCF", f"{sample}_Final_.tsv")
+        # New pipeline outputs ${sample}_Final_.txt (ANNOVAR format with UniqueID)
+        final_txt = self.find_file(output_dir / "Germline_VCF", f"{sample}_Final_.txt")
 
         self.job.status = JobStatus.COMPLETED
         self.job.current_step = "Completed"
@@ -149,7 +148,8 @@ class PipelineRunner:
         self.job.raw_vcf_path = str(raw_vcf) if raw_vcf else None
         # Store ANNOVAR TXT in annotated_vcf_path field (repurposed)
         self.job.annotated_vcf_path = str(annovar_txt) if annovar_txt else None
-        self.job.filtered_tsv_path = str(final_tsv) if final_tsv else None
+        # Store Final_.txt (ANNOVAR with UniqueID) in filtered_tsv_path field
+        self.job.filtered_tsv_path = str(final_txt) if final_txt else None
 
         self.db.commit()
 

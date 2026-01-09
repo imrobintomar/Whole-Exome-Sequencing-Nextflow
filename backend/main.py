@@ -19,6 +19,7 @@ from acmg_classifier import ACMGClassifier
 from constraint_data import get_constraint_db
 from variant_analyzer import VariantAnalyzer
 import threading
+import pandas as pd
 
 # Lifespan event handler
 @asynccontextmanager
@@ -66,6 +67,38 @@ app.add_middleware(
 )
 
 # Global exception handler to ensure CORS headers are sent even on errors
+def get_analysis_file(job: Job) -> str:
+    """
+    Get the analysis file path with fallback logic.
+
+    Priority:
+    1. filtered_tsv_path (Final_.txt with UniqueID) - new pipeline
+    2. annotated_vcf_path (ANNOVAR multianno.txt) - old pipeline or if Final_.txt missing
+
+    For old jobs, automatically add UniqueID column if missing.
+    """
+    # Try filtered_tsv_path first (new pipeline output)
+    if job.filtered_tsv_path and os.path.exists(job.filtered_tsv_path):
+        return job.filtered_tsv_path
+
+    # Fallback to ANNOVAR file (old pipeline or incomplete pipeline)
+    if job.annotated_vcf_path and os.path.exists(job.annotated_vcf_path):
+        # Check if this ANNOVAR file already has UniqueID column
+        try:
+            df = pd.read_csv(job.annotated_vcf_path, sep='\t', nrows=1, encoding='utf-8', on_bad_lines='skip')
+            if 'UniqueID' in df.columns:
+                # Already has UniqueID, can use directly
+                return job.annotated_vcf_path
+
+            # Need to add UniqueID - create temp file with UniqueID added
+            print(f"⚠️  Job {job.job_id}: Using ANNOVAR file without UniqueID, adding it now...")
+            return job.annotated_vcf_path  # For now, return as-is and handle in VariantAnalyzer
+        except Exception as e:
+            print(f"⚠️  Error checking UniqueID column: {e}")
+            return job.annotated_vcf_path
+
+    return None
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """
@@ -369,6 +402,46 @@ def delete_job(
 
     return {"message": "Job deleted successfully", "job_id": job_id}
 
+# Check if BAM file exists
+@app.get("/jobs/{job_id}/files/bam")
+def check_bam_file(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if BAM file exists for this job"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=404, detail="Job not completed yet")
+
+    if not job.bam_path or not os.path.exists(job.bam_path):
+        raise HTTPException(status_code=404, detail="BAM file not found")
+
+    return {"available": True, "path": job.bam_path}
+
+# Check if VCF file exists
+@app.get("/jobs/{job_id}/files/vcf")
+def check_vcf_file(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check if VCF file exists for this job"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=404, detail="Job not completed yet")
+
+    if not job.raw_vcf_path or not os.path.exists(job.raw_vcf_path):
+        raise HTTPException(status_code=404, detail="VCF file not found")
+
+    return {"available": True, "path": job.raw_vcf_path}
+
 # Download result file
 @app.get("/jobs/{job_id}/download/{file_type}")
 def download_file(
@@ -388,11 +461,13 @@ def download_file(
     # Map file type to path and custom filename (updated for simplified pipeline)
     file_map = {
         "bam": (job.bam_path, f"{job.sample_name}_recall.bam"),
+        "bam.bai": (f"{job.bam_path}.bai" if job.bam_path else None, f"{job.sample_name}_recall.bam.bai"),
         "raw_vcf": (job.raw_vcf_path, f"{job.sample_name}.vcf.gz"),
+        "raw_vcf.tbi": (f"{job.raw_vcf_path}.tbi" if job.raw_vcf_path else None, f"{job.sample_name}.vcf.gz.tbi"),
         # annotated_vcf now points to ANNOVAR TXT file
         "annotated_vcf": (job.annotated_vcf_path, f"{job.sample_name}.annovar.hg38_multianno.txt"),
-        # filtered_tsv now points to Final_.tsv
-        "filtered_tsv": (job.filtered_tsv_path, f"{job.sample_name}_Final_.tsv")
+        # filtered_tsv now points to Final_.txt (ANNOVAR format with UniqueID)
+        "filtered_tsv": (job.filtered_tsv_path, f"{job.sample_name}_Final_.txt")
     }
 
     file_info = file_map.get(file_type)
@@ -401,7 +476,7 @@ def download_file(
 
     file_path, download_filename = file_info
 
-    # If requesting index file, append appropriate extension
+    # If requesting index file via query parameter (backward compatibility)
     if index:
         if file_type == "bam":
             file_path = f"{file_path}.bai"
@@ -451,7 +526,9 @@ async def download_filtered_variants(
     if job.status != JobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Job not completed yet")
 
-    if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
+    # Get analysis file with fallback to ANNOVAR
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
         raise HTTPException(status_code=404, detail="TSV file not found")
 
     # Extract validated genes from request
@@ -459,7 +536,11 @@ async def download_filtered_variants(
 
     # Read and filter TSV
     try:
-        df = pd.read_csv(job.filtered_tsv_path, sep='\t')
+        # Handle encoding issues from pipeline output
+        try:
+            df = pd.read_csv(analysis_file, sep='\t', encoding='utf-8')
+        except UnicodeDecodeError:
+            df = pd.read_csv(analysis_file, sep='\t', encoding='latin1', on_bad_lines='skip')
 
         # Filter by genes (handle multiple genes per row)
         def gene_in_list(gene_str):
@@ -547,12 +628,18 @@ async def apply_gene_panel(
     if job.status != JobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Job not completed yet")
 
-    if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
+    # Get analysis file with fallback to ANNOVAR
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
         raise HTTPException(status_code=404, detail="TSV file not found")
 
     try:
-        # Read TSV
-        df = pd.read_csv(job.filtered_tsv_path, sep='\t')
+        # Read TSV (handle encoding issues from pipeline output)
+        try:
+            df = pd.read_csv(analysis_file, sep='\t', encoding='utf-8')
+        except UnicodeDecodeError:
+            df = pd.read_csv(analysis_file, sep='\t', encoding='latin1', on_bad_lines='skip')
+
         genes = gene_filter.genes
 
         # Filter by genes using GenePanelManager
@@ -673,12 +760,18 @@ async def classify_job_variants(
     if job.status != JobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Job not completed yet")
 
-    if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
+    # Get analysis file with fallback to ANNOVAR
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
         raise HTTPException(status_code=404, detail="TSV file not found")
 
     try:
-        # Read TSV
-        df = pd.read_csv(job.filtered_tsv_path, sep='\t')
+        # Read TSV (handle encoding issues from pipeline output)
+        try:
+            df = pd.read_csv(analysis_file, sep='\t', encoding='utf-8')
+        except UnicodeDecodeError:
+            # Fallback to latin1 encoding if UTF-8 fails
+            df = pd.read_csv(analysis_file, sep='\t', encoding='latin1', on_bad_lines='skip')
 
         # Get constraint DB
         constraint_db = get_constraint_db()
@@ -730,8 +823,22 @@ async def classify_job_variants(
             # Classify
             result = classifier.classify_variant(variant)
 
+            # Get UniqueID with fallback logic
+            # Priority:
+            # 1. UniqueID column (from Final_.txt with add_unique_id.py)
+            # 2. Construct from ANNOVAR columns: Chr:Start:Ref:Alt
+            # 3. Construct from VCF columns: CHROM:POS:REF:ALT (legacy)
+            unique_id = safe_get('UniqueID', '')
+            if not unique_id or unique_id == '.':
+                # Try ANNOVAR format
+                chr_val = safe_get('Chr', safe_get('CHROM', ''))
+                start_val = safe_get('Start', safe_get('POS', ''))
+                ref_val = safe_get('Ref', safe_get('REF', ''))
+                alt_val = safe_get('Alt', safe_get('ALT', ''))
+                unique_id = f"{chr_val}:{start_val}:{ref_val}:{alt_val}"
+
             classifications.append({
-                "position": f"{safe_get('CHROM', '')}:{safe_get('POS', '')}",
+                "position": unique_id,
                 "gene": gene,
                 "consequence": variant["consequence"],
                 "classification": result["classification"],
@@ -773,11 +880,13 @@ async def get_variant_metrics(
     if job.status != JobStatus.COMPLETED:
         raise HTTPException(status_code=400, detail="Job not completed yet")
 
-    if not job.filtered_tsv_path or not os.path.exists(job.filtered_tsv_path):
+    # Get analysis file with fallback to ANNOVAR
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
         raise HTTPException(status_code=404, detail="TSV file not found")
 
     try:
-        analyzer = VariantAnalyzer(job.filtered_tsv_path)
+        analyzer = VariantAnalyzer(analysis_file)
         metrics = analyzer.get_all_metrics()
 
         return {

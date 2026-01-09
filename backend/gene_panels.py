@@ -10,19 +10,17 @@ class GenePanelManager:
 
     PANELAPP_BASE_URL = "https://panelapp.genomicsengland.co.uk/api/v1"
 
-    # ACMG Secondary Findings v3.2 (2023) - 81 genes
+    # ACMG Secondary Findings v3.2 (2023) - 81 genes (duplicates removed)
     ACMG_SF_GENES = [
         'BRCA1', 'BRCA2', 'MLH1', 'MSH2', 'MSH6', 'PMS2', 'APC', 'TP53',
         'MUTYH', 'PTEN', 'STK11', 'BMPR1A', 'SMAD4', 'VHL', 'MEN1', 'RET',
         'RB1', 'NF2', 'TSC1', 'TSC2', 'WT1', 'SDHD', 'SDHAF2', 'SDHC', 'SDHB',
         'FH', 'MAX', 'TMEM127', 'OTC', 'RPE65', 'BTD', 'SCN5A', 'RYR2',
-        'KCNQ1', 'KCNH2', 'SCN5A', 'RYR2', 'LDLR', 'APOB', 'PCSK9', 'MYH7',
+        'KCNQ1', 'KCNH2', 'LDLR', 'APOB', 'PCSK9', 'MYH7',
         'MYBPC3', 'TNNI3', 'TNNT2', 'TPM1', 'MYL2', 'MYL3', 'ACTC1', 'PRKAG2',
-        'GLA', 'LAMP2', 'PKP2', 'DSP', 'DSC2', 'TMEM43', 'DSG2', 'RYR2',
-        'SCN5A', 'KCNQ1', 'KCNH2', 'COL3A1', 'FBN1', 'TGFBR1', 'TGFBR2',
-        'SMAD3', 'ACTA2', 'MYH11', 'MYLK', 'RET', 'SDHD', 'SDHAF2', 'SDHC',
-        'SDHB', 'MAX', 'TMEM127', 'VHL', 'ATP7B', 'OTC', 'PCCA', 'PCCB',
-        'RPE65'
+        'GLA', 'LAMP2', 'PKP2', 'DSP', 'DSC2', 'TMEM43', 'DSG2',
+        'COL3A1', 'FBN1', 'TGFBR1', 'TGFBR2',
+        'SMAD3', 'ACTA2', 'MYH11', 'MYLK', 'ATP7B', 'PCCA', 'PCCB'
     ]
 
     @classmethod

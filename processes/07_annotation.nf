@@ -21,6 +21,7 @@ process annovarAnnotate {
 
         # ANNOVAR as single source of truth - outputs TXT format directly
         ${params.annovar_dir}/table_annovar.pl \$INPUT_VCF ${params.annovar_db} \\
+            --vcfinput \
             --buildver hg38 \\
             --out ${sample_id}.annovar \\
             --remove \\
