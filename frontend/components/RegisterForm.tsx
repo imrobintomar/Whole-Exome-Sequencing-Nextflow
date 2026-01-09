@@ -49,9 +49,10 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
         });
       }
 
-      // Send email verification
+      // Send email verification with continue URL
+      const continueUrl = `${window.location.origin}/?verified=true`;
       await sendEmailVerification(userCredential.user, {
-        url: window.location.origin,
+        url: continueUrl,
         handleCodeInApp: false
       });
 

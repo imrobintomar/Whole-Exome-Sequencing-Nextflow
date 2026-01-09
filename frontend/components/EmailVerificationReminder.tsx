@@ -24,8 +24,9 @@ export default function EmailVerificationReminder({ email }: EmailVerificationRe
     setSuccess(false);
 
     try {
+      const continueUrl = `${window.location.origin}/?verified=true`;
       await sendEmailVerification(auth.currentUser, {
-        url: window.location.origin,
+        url: continueUrl,
         handleCodeInApp: false
       });
       setSuccess(true);

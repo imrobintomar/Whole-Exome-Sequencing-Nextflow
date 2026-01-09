@@ -61,8 +61,9 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
 
     setResendingEmail(true);
     try {
+      const continueUrl = `${window.location.origin}/?verified=true`;
       await sendEmailVerification(auth.currentUser, {
-        url: window.location.origin,
+        url: continueUrl,
         handleCodeInApp: false
       });
       setError('');
