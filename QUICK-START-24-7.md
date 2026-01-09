@@ -9,6 +9,11 @@ cd /media/drprabudh/m3/Nextflow-Script/WholeExome/backend
 ./start-backend-service.sh
 ```
 
+**If you get errors about missing uvicorn** (you're using conda/miniconda):
+```bash
+./fix-service.sh
+```
+
 That's it! Your backend will now run permanently.
 
 ---
