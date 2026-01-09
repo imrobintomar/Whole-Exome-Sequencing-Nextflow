@@ -40,28 +40,48 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
     setLoading(true);
 
     try {
+      console.log('🔵 [Registration] Starting user registration...');
+      console.log('📧 [Registration] Email:', email);
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('✅ [Registration] User created successfully!');
+      console.log('👤 [Registration] UID:', userCredential.user.uid);
+      console.log('📧 [Registration] Email:', userCredential.user.email);
+      console.log('✉️ [Registration] Email Verified:', userCredential.user.emailVerified);
 
       // Update display name
       if (displayName) {
+        console.log('📝 [Registration] Updating display name...');
         await updateProfile(userCredential.user, {
           displayName: displayName
         });
+        console.log('✅ [Registration] Display name updated');
       }
 
       // Send email verification with continue URL
       const continueUrl = `${window.location.origin}/?verified=true`;
+      console.log('📬 [Registration] Sending verification email...');
+      console.log('🔗 [Registration] Continue URL:', continueUrl);
+
       await sendEmailVerification(userCredential.user, {
         url: continueUrl,
         handleCodeInApp: false
       });
 
+      console.log('✅ [Registration] Verification email sent successfully!');
+      console.log('📮 [Registration] Check inbox for:', email);
+      console.log('💡 [Registration] If not received, check spam folder');
+
       setVerificationSent(true);
 
       // Sign out the user immediately after registration so they can't access the dashboard without verification
+      console.log('🔐 [Registration] Signing out user...');
       await auth.signOut();
+      console.log('✅ [Registration] User signed out');
     } catch (err: any) {
-      console.error('Registration error:', err);
+      console.error('❌ [Registration] Error:', err);
+      console.error('❌ [Registration] Error code:', err.code);
+      console.error('❌ [Registration] Error message:', err.message);
       const errorMessage = err.code === 'auth/email-already-in-use'
         ? 'Email already registered'
         : err.code === 'auth/weak-password'
