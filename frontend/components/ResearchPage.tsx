@@ -44,10 +44,10 @@ export default function ResearchPage() {
               },
               
             ].map((item, i) => (
-              <Card key={i} className="border-slate-200">
+              <Card key={i} className="border-slate-200 bg-[#02042e]">
                 <CardContent className="p-6">
-                  <h3 className="font-bold text-slate-900 mb-2">{item.title}</h3>
-                  <p className="text-slate-600 text-sm">{item.desc}</p>
+                  <h3 className="font-bold text-slate-900 mb-2 text-white">{item.title}</h3>
+                  <p className="text-slate-600 text-sm text-white ">{item.desc}</p>
                 </CardContent>
               </Card>
             ))}
@@ -75,10 +75,10 @@ export default function ResearchPage() {
         <div>
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Pipeline Specifications</h2>
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 bg-[#02042e]">
               <CardContent className="p-6">
-                <h3 className="font-bold text-slate-900 mb-3">Input Requirements</h3>
-                <ul className="text-slate-600 space-y-2 text-sm">
+                <h3 className="font-bold text-white mb-3">Input Requirements</h3>
+                <ul className="text-white space-y-2 text-sm">
                   <li>• Paired-end FASTQ files (.fastq.gz)</li>
                   <li>• Whole exome sequencing data</li>
                   <li>• Minimum 50x mean coverage recommended</li>
@@ -86,10 +86,10 @@ export default function ResearchPage() {
                 </ul>
               </CardContent>
             </Card>
-            <Card className="border-slate-200">
+            <Card className="border-slate-200 bg-[#02042e] ">
               <CardContent className="p-6">
-                <h3 className="font-bold text-slate-900 mb-3">Output Files</h3>
-                <ul className="text-slate-600 space-y-2 text-sm">
+                <h3 className="font-bold text-white mb-3">Output Files</h3>
+                <ul className="text-white space-y-2 text-sm">
                   <li>• BAM file with BQSR (indexed)</li>
                   <li>• Raw VCF (gzipped & indexed)</li>
                   <li>• Annotated VCF with  ANNOVAR</li>
@@ -127,20 +127,20 @@ export default function ResearchPage() {
           </div>
         </div>
 
-        <div className="bg-slate-900 text-white rounded-lg p-8">
+        <div className="bg-slate-900 text-white rounded-lg p-8 bg-[#02042e]" >
           <h3 className="text-lg font-bold mb-4">Pipeline Performance</h3>
           <div className="grid md:grid-cols-3 gap-6">
             <div>
               <div className="text-2xl font-bold text-cyan-400 mb-1">2-4 hours</div>
-              <div className="text-slate-300 text-sm">Total processing time</div>
+              <div className="text-slate-300 text-sm text-white ">Total processing time</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-cyan-400 mb-1">~80,000</div>
-              <div className="text-slate-300 text-sm">Variants per exome</div>
+              <div className="text-slate-300 text-sm text-white ">Variants per exome</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-cyan-400 mb-1">20+</div>
-              <div className="text-slate-300 text-sm">Annotation sources</div>
+              <div className="text-slate-300 text-sm text-white ">Annotation sources</div>
             </div>
           </div>
         </div>

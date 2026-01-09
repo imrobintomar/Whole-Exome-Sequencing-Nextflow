@@ -114,25 +114,25 @@ export default function Home() {
             <nav className="hidden md:flex items-center gap-8">
               <button
                 onClick={() => setCurrentPage('home')}
-                className={`transition ${currentPage === 'home' ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`transition ${currentPage === 'home' ? 'text-[#02042e] font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 Home
               </button>
               <button
                 onClick={() => setCurrentPage('about')}
-                className={`transition ${currentPage === 'about' ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`transition ${currentPage === 'about' ? 'text-[#02042e] font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 About
               </button>
               <button
                 onClick={() => setCurrentPage('research')}
-                className={`transition ${currentPage === 'research' ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`transition ${currentPage === 'research' ? 'text-[#02042e] font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 Research
               </button>
               <button
                 onClick={() => setCurrentPage('contact')}
-                className={`transition ${currentPage === 'contact' ? 'text-blue-600 font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
+                className={`transition ${currentPage === 'contact' ? 'text-[#02042e] font-semibold' : 'text-slate-600 hover:text-slate-900'}`}
               >
                 Contact
               </button>
@@ -153,50 +153,55 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg flex items-center justify-center">
-                  <Dna className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-bold text-slate-900">ATGCFlow</span>
-              </div>
-              <p className="text-sm text-slate-600">Industry-grade whole exome sequencing analysis platform</p>
-            </div>
+<footer className="border-t border-slate-700 bg-[#02042e] mt-12">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="grid md:grid-cols-4 gap-8 mb-8">
 
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Navigation</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => setCurrentPage('home')} className="text-sm text-slate-600 hover:text-slate-900">Home</button></li>
-                <li><button onClick={() => setCurrentPage('about')} className="text-sm text-slate-600 hover:text-slate-900">About</button></li>
-                <li><button onClick={() => setCurrentPage('research')} className="text-sm text-slate-600 hover:text-slate-900">Research</button></li>
-                <li><button onClick={() => setCurrentPage('contact')} className="text-sm text-slate-600 hover:text-slate-900">Contact</button></li>
-              </ul>
-            </div>
-
-            
-
-            <div>
-              <h4 className="font-semibold text-slate-900 mb-4">Legal</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">Privacy Policy</a></li>
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">Terms of Service</a></li>
-                <li><a href="#" className="text-sm text-slate-600 hover:text-slate-900">Disclaimer</a></li>
-              </ul>
-            </div>
+      {/* Brand */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
+            <Dna className="h-4 w-4 text-white" />
           </div>
-
-          <div className="border-t border-slate-200 pt-8">
-            <div className="text-center">
-              <div className="text-sm text-slate-600">
-                © 2025 ATGCFlow || Research Project || Not for Clinical Use
-              </div>
-            </div>
-          </div>
+          <span className="font-bold text-white">ATGCFLOW</span>
         </div>
-      </footer>
+        <p className="text-sm text-white">
+          Industry-grade Whole Exome Sequencing analysis platform
+        </p>
+      </div>
+
+      {/* Navigation */}
+      <div>
+        <h4 className="font-semibold text-white mb-4">Navigation</h4>
+        <ul className="space-y-2">
+          <li><button onClick={() => setCurrentPage('home')} className="text-sm text-slate-300 hover:text-white">Home</button></li>
+          <li><button onClick={() => setCurrentPage('about')} className="text-sm text-slate-300 hover:text-white">About</button></li>
+          <li><button onClick={() => setCurrentPage('research')} className="text-sm text-slate-300 hover:text-white">Research</button></li>
+          <li><button onClick={() => setCurrentPage('contact')} className="text-sm text-slate-300 hover:text-white">Contact</button></li>
+        </ul>
+      </div>
+
+      {/* Legal */}
+      <div>
+        <h4 className="font-semibold text-white mb-4">Legal</h4>
+        <ul className="space-y-2">
+          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Privacy Policy</a></li>
+          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Terms of Service</a></li>
+          <li><a href="#" className="text-sm text-slate-300 hover:text-white">Disclaimer</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    {/* Bottom Bar */}
+    <div className="border-t border-white pt-8">
+      <div className="text-center text-sm text-white">
+        © 2025 ATGCFLOW | Research Project | Not for Clinical Use
+      </div>
+    </div>
+  </div>
+</footer>
+
     </div>
   );
 }

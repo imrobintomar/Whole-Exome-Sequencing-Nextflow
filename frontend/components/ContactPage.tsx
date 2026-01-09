@@ -27,7 +27,7 @@ export default function ContactPage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 gap-8 mb-12 ">
           {[
             {
               icon: Mail,
@@ -42,7 +42,7 @@ export default function ContactPage() {
             {
               icon: Microscope,
               title: 'Research Collaboration',
-              content: 'aiimsgenomics@gmail.com'
+              content: 'drprabudhgoel@gmail.com'
             },
             {
               icon: Globe,
@@ -52,15 +52,15 @@ export default function ContactPage() {
           ].map((item, i) => {
             const IconComponent = item.icon;
             return (
-              <Card key={i} className="border-slate-200">
+              <Card key={i} className="border-slate-200 bg-[#02042e]">
                 <CardContent className="p-6 text-center">
                   <div className="flex justify-center mb-4">
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                       <IconComponent className="h-6 w-6 text-blue-600" />
                     </div>
                   </div>
-                  <h3 className="font-bold text-slate-900 mb-2">{item.title}</h3>
-                  <p className="text-slate-600 text-sm">{item.content}</p>
+                  <h3 className="font-bold text-white  mb-2">{item.title}</h3>
+                  <p className="text-white text-sm">{item.content}</p>
                 </CardContent>
               </Card>
             );
@@ -78,7 +78,7 @@ export default function ContactPage() {
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Name</label>
+                  <label className="block text-sm font-medium text-white  mb-2">Name</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -88,7 +88,7 @@ export default function ContactPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-white mb-2">Email</label>
                   <input
                     type="email"
                     value={formData.email}
@@ -100,7 +100,7 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Subject</label>
+                <label className="block text-sm font-medium text-white mb-2">Subject</label>
                 <input
                   type="text"
                   value={formData.subject}
@@ -111,7 +111,7 @@ export default function ContactPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-2">Message</label>
+                <label className="block text-sm font-medium text-white mb-2">Message</label>
                 <textarea
                   rows={6}
                   value={formData.message}

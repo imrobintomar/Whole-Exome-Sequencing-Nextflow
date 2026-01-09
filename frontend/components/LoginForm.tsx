@@ -52,7 +52,7 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
           </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
           <CardDescription>
-            Sign in to access your WES Pipeline dashboard
+            Sign in to access your ATGCFLOW  dashboard
           </CardDescription>
         </CardHeader>
         <CardContent>

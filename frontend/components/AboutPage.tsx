@@ -14,7 +14,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-12">
+        <div className="grid md:grid-cols-2 gap-12 ">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Our Mission</h2>
             <p className="text-slate-600 leading-relaxed">
@@ -59,13 +59,13 @@ export default function AboutPage() {
                 purple: 'bg-purple-100 text-purple-600'
               };
               return (
-                <Card key={i} className="border-slate-200">
+                <Card key={i} className="border-[#02042e] bg-[#02042e]">
                   <CardContent className="p-6">
                     <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${colorClasses[item.color]}`}>
                       <IconComponent className="h-6 w-6" />
                     </div>
-                    <h3 className="font-bold text-slate-900 mb-2">{item.title}</h3>
-                    <p className="text-slate-600 text-sm">{item.desc}</p>
+                    <h3 className="font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-white text-sm">{item.desc}</p>
                   </CardContent>
                 </Card>
               );
@@ -73,9 +73,9 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-8">
-          <h3 className="text-lg font-bold text-blue-900 mb-2">Research & Development</h3>
-          <p className="text-blue-800">
+        <div className="bg-[#02042e] border border-blue-200 rounded-lg p-8">
+          <h3 className="text-lg font-bold text-white mb-2">Research & Development</h3>
+          <p className="text-white">
             We are committed to advancing genomic science through continued research and innovation. Our platform integrates best practices from the bioinformatics community and stays current with the latest advances in variant interpretation.
           </p>
         </div>

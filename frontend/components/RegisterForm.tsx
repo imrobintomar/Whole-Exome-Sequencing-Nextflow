@@ -73,7 +73,7 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
           </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>
-            Join WES Pipeline to start analyzing your exome data
+            Join ATGCFlOW  to start analyzing your  Whole Exome data
           </CardDescription>
         </CardHeader>
         <CardContent>

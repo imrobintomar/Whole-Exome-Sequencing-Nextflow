@@ -56,24 +56,24 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
             <div className="space-y-4">
               <Badge variant="outline" className="w-fit border-blue-200 bg-blue-50 text-blue-700">
                 <span className="inline-block w-2 h-2 bg-blue-600 rounded-full mr-2"></span>
-                Nextflow Pipeline Platform
+                Whole Exome Analysis Platform
               </Badge>
 
               <h1 className="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight">
-                Whole Exome Sequencing Analysis Pipeline
+                Whole Exome Sequencing Analysis 
               </h1>
 
               <p className="text-lg text-slate-600 leading-relaxed">
-                Production-grade WES pipeline powered by Nextflow. Process FASTQ files through BWA alignment, GATK variant calling, VEP annotation, and deliver comprehensive genomic insights with ACMG classification.
+                Production-grade WES pipeline . Process FASTQ files through BWA alignment, GATK variant calling, VEP annotation, and deliver comprehensive genomic insights with ACMG classification.
               </p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onSignIn}>
+              <Button size="lg" className="bg-blue-600 hover:bg-[#02042e] text-white" onClick={onSignIn}>
                 Get Started
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" onClick={() => onNavigate('about')}>
+              <Button size="lg" className="bg-black hover:bg-blue-600 text-white" variant="outline" onClick={() => onNavigate('about')}>
                 Learn More
               </Button>
             </div>
@@ -82,7 +82,7 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
             <div className="grid grid-cols-3 gap-4 pt-4">
               <div>
                 <div className="text-2xl font-bold text-slate-900">{jobCount.toLocaleString()}</div>
-                <div className="text-sm text-slate-600">Jobs Processed</div>
+                <div className="text-sm text-black">Jobs Processed</div>
               </div>
               <div>
                 <div className="text-2xl font-bold text-slate-900">{sampleCount.toLocaleString()}</div>
@@ -138,11 +138,11 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
       </section>
 
       {/* Pipeline Section */}
-      <section className="bg-slate-900 text-white py-16 sm:py-24">
+      <section className="bg-[#02042e] text-white py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">Multi-Step Analysis Pipeline</h2>
-            <p className="text-lg text-slate-400">From raw FASTQ to annotated variants with clinical insights</p>
+            <p className="text-lg text-slate-400 text-white">From raw FASTQ to annotated variants with clinical insights</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6">
@@ -184,18 +184,18 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
                       <ChevronRight className="h-6 w-6" />
                     </div>
                   )}
-                  <Card className="border-slate-700 bg-slate-800/50 h-full">
+                  <Card className="border-slate-700 bg-[#02042e] h-full">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-3 mb-4">
-                        <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                          <IconComponent className="h-5 w-5 text-blue-400" />
+                        <div className="w-10 h-10 bg-[#02042e] rounded-lg flex items-center justify-center">
+                          <IconComponent className="h-5 w-5 text-white" />
                         </div>
-                        <span className="text-sm font-semibold text-blue-400">{item.phase}</span>
+                        <span className="text-sm font-semibold text-white">{item.phase}</span>
                       </div>
-                      <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                      <p className="text-slate-400 text-sm mb-4">{item.description}</p>
-                      <div className="text-sm text-slate-500 flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                      <h3 className="text-xl font-bold mb-2 text-white">{item.title}</h3>
+                      <p className="text-slate-400 text-sm mb-4 text-white">{item.description}</p>
+                      <div className="text-sm text-slate-500 flex items-center gap-2 text-white">
+                        <Clock className="h-4 w-4 text-white" />
                         {item.duration}
                       </div>
                     </CardContent>
@@ -249,13 +249,13 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
               yellow: 'bg-yellow-100 text-yellow-600'
             };
             return (
-              <Card key={i} className="border-slate-200">
+              <Card key={i} className="border-slate-200 bg-[#02042e]">
                 <CardContent className="p-8">
                   <div className={`w-12 h-12 rounded-lg flex items-center justify-center mb-4 ${colorClasses[feature.color]}`}>
                     <IconComponent className="h-6 w-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">{feature.title}</h3>
-                  <p className="text-slate-600">{feature.description}</p>
+                  <h3 className="text-xl font-bold text-white">{feature.title}</h3>
+                  <p className="text-white" >{feature.description}</p>
                 </CardContent>
               </Card>
             );
@@ -289,7 +289,7 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
       </section>
 
       {/* CTA */}
-      <section className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-16 sm:py-24">
+      <section className="bg-[#02042e] text-white py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Analyze Your Exome Data?</h2>
           <p className="text-lg text-blue-100 mb-8 max-w-2xl mx-auto">
