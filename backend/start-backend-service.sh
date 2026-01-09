@@ -48,6 +48,47 @@ sleep 2
 sudo systemctl status atgcflow-backend.service --no-pager
 echo ""
 
+# Step 6: Start ngrok in background
+echo "📝 Step 6: Starting ngrok tunnel..."
+
+# Check if ngrok is installed
+if ! command -v ngrok &> /dev/null; then
+    echo "⚠️  ngrok is not installed!"
+    echo "   Install ngrok from: https://ngrok.com/download"
+    echo "   Or skip ngrok and use a different tunneling solution"
+    echo ""
+else
+    # Kill any existing ngrok processes
+    pkill -f ngrok || true
+
+    # Start ngrok in background
+    nohup ngrok http 8000 > "$BACKEND_DIR/logs/ngrok.log" 2>&1 &
+    NGROK_PID=$!
+    echo $NGROK_PID > "$BACKEND_DIR/ngrok.pid"
+
+    echo "✅ ngrok started (PID: $NGROK_PID)"
+    echo "   Waiting for ngrok to initialize..."
+    sleep 3
+
+    # Get ngrok URL
+    NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*' | grep -o 'https://[^"]*' | head -1)
+
+    if [ -n "$NGROK_URL" ]; then
+        echo "✅ ngrok tunnel active!"
+        echo "   Public URL: $NGROK_URL"
+        echo ""
+        echo "⚠️  IMPORTANT: Update your backend/.env file:"
+        echo "   Add this URL to CORS_ORIGINS: $NGROK_URL"
+        echo "   Then restart backend: sudo systemctl restart atgcflow-backend.service"
+        echo ""
+    else
+        echo "⚠️  Could not get ngrok URL"
+        echo "   Check manually: http://localhost:4040"
+        echo "   Or view logs: tail -f $BACKEND_DIR/logs/ngrok.log"
+        echo ""
+    fi
+fi
+
 echo "🎉 Setup Complete!"
 echo ""
 echo "📚 Useful commands:"
@@ -55,12 +96,17 @@ echo "   View status:  sudo systemctl status atgcflow-backend.service"
 echo "   View logs:    sudo journalctl -u atgcflow-backend.service -f"
 echo "   Restart:      sudo systemctl restart atgcflow-backend.service"
 echo "   Stop:         sudo systemctl stop atgcflow-backend.service"
+echo "   ngrok URL:    curl -s http://localhost:4040/api/tunnels | grep public_url"
 echo ""
 echo "📊 Log files:"
 echo "   Backend:      tail -f $BACKEND_DIR/logs/backend.log"
 echo "   Errors:       tail -f $BACKEND_DIR/logs/backend-error.log"
+echo "   ngrok:        tail -f $BACKEND_DIR/logs/ngrok.log"
 echo ""
 echo "✅ Your backend is now running 24/7!"
-echo "   It will automatically start on system boot."
-echo "   It will automatically restart if it crashes."
+echo "   Backend service: Running and auto-restarts on failure"
+echo "   ngrok tunnel: Running (PID saved in ngrok.pid)"
+echo "   Auto-start on boot: Enabled for backend service"
+echo ""
+echo "🔍 To view ngrok dashboard: http://localhost:4040"
 echo ""
