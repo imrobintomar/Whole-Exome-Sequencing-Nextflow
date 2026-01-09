@@ -16,6 +16,7 @@ import ContactPage from '@/components/ContactPage';
 import PrivacyPolicyPage from '@/components/PrivacyPolicyPage';
 import TermsOfServicePage from '@/components/TermsOfServicePage';
 import DisclaimerPage from '@/components/DisclaimerPage';
+import EmailVerificationReminder from '@/components/EmailVerificationReminder';
 
 type PageType = 'home' | 'about' | 'research' | 'contact' | 'signin' | 'privacy' | 'terms' | 'disclaimer';
 
@@ -99,8 +100,13 @@ export default function Home() {
     );
   }
 
-  // If user is logged in, show dashboard
+  // If user is logged in, check email verification
   if (user) {
+    // Check if email is verified
+    const firebaseUser = auth.currentUser;
+    if (firebaseUser && !firebaseUser.emailVerified) {
+      return <EmailVerificationReminder email={user.email} />;
+    }
     return <Dashboard user={user} onLogout={handleLogout} />;
   }
 

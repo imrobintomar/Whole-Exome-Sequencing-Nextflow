@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
-import { Dna, Loader } from 'lucide-react';
+import { Dna, Loader, AlertCircle, Mail } from 'lucide-react';
 
 interface LoginFormProps {
   onLogin: () => void;
@@ -19,14 +19,27 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationWarning, setVerificationWarning] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setVerificationWarning(false);
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        setVerificationWarning(true);
+        setLoading(false);
+        // Don't sign out - let them proceed to see the verification reminder
+        onLogin();
+        return;
+      }
+
       onLogin();
     } catch (err: any) {
       console.error('Login error:', err);
@@ -40,6 +53,27 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
       setError(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!auth.currentUser) return;
+
+    setResendingEmail(true);
+    try {
+      await sendEmailVerification(auth.currentUser, {
+        url: window.location.origin,
+        handleCodeInApp: false
+      });
+      setError('');
+      alert('Verification email sent! Please check your inbox.');
+    } catch (err: any) {
+      console.error('Resend verification error:', err);
+      if (err.code === 'auth/too-many-requests') {
+        setError('Too many requests. Please wait a few minutes.');
+      }
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -82,6 +116,44 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
                 disabled={loading}
               />
             </div>
+
+            {verificationWarning && (
+              <Card className="border-amber-500/50 bg-amber-50">
+                <CardContent className="pt-6 pb-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-amber-900 mb-2">
+                        Email Not Verified
+                      </p>
+                      <p className="text-sm text-amber-800 mb-3">
+                        You need to verify your email before accessing the dashboard. Please check your inbox for the verification link.
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={handleResendVerification}
+                        disabled={resendingEmail}
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                      >
+                        {resendingEmail ? (
+                          <>
+                            <Loader className="mr-2 h-3 w-3 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Mail className="mr-2 h-3 w-3" />
+                            Resend Verification Email
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {error && (
               <Card className="border-destructive/50 bg-destructive/5">

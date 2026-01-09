@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
-import { Dna, Loader } from 'lucide-react';
+import { Dna, Loader, Mail, CheckCircle } from 'lucide-react';
 
 interface RegisterFormProps {
   onRegister: () => void;
@@ -21,6 +21,7 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +41,7 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
 
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
+
       // Update display name
       if (displayName) {
         await updateProfile(userCredential.user, {
@@ -48,7 +49,16 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
         });
       }
 
-      onRegister();
+      // Send email verification
+      await sendEmailVerification(userCredential.user, {
+        url: window.location.origin,
+        handleCodeInApp: false
+      });
+
+      setVerificationSent(true);
+
+      // Sign out the user immediately after registration so they can't access the dashboard without verification
+      await auth.signOut();
     } catch (err: any) {
       console.error('Registration error:', err);
       const errorMessage = err.code === 'auth/email-already-in-use'
@@ -64,6 +74,57 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
     }
   };
 
+  // If verification email was sent, show success message
+  if (verificationSent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1 text-center">
+            <div className="mx-auto mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle className="h-10 w-10 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Verify Your Email</CardTitle>
+            <CardDescription>
+              We've sent a verification link to your email
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-blue-900 mb-2">Check your inbox</p>
+                  <p className="text-sm text-blue-800 mb-3">
+                    We sent a verification email to <strong>{email}</strong>
+                  </p>
+                  <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
+                    <li>Click the verification link in the email</li>
+                    <li>Return to this page and sign in</li>
+                    <li>Check your spam folder if you don't see it</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="text-sm text-amber-900">
+                <strong>Note:</strong> You must verify your email before you can access the dashboard. The verification link expires in 24 hours.
+              </p>
+            </div>
+
+            <Button
+              onClick={onToggle}
+              className="w-full"
+              variant="default"
+            >
+              Go to Sign In
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
       <Card className="w-full max-w-md">
@@ -73,7 +134,7 @@ export default function RegisterForm({ onRegister, onToggle }: RegisterFormProps
           </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
           <CardDescription>
-            Join ATGCFlOW  to start analyzing your  Whole Exome data
+            Join ATGCFLOW to start analyzing your Whole Exome data
           </CardDescription>
         </CardHeader>
         <CardContent>
