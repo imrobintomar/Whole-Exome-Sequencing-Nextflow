@@ -6,7 +6,7 @@ Admin-only endpoints for platform management
 from fastapi import APIRouter, Depends, HTTPException, Query
 from middleware.admin_guard import require_admin
 from database import SessionLocal, Job, User
-from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent
+from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent, AuditLog
 from services.metrics_service import MetricsService
 from services.audit_service import AuditService
 from sqlalchemy import func
