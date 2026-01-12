@@ -439,9 +439,33 @@ export const adminApi = {
     return response.data;
   },
 
-  getAllJobs: async (params?: { status?: string; user_id?: string; limit?: number; offset?: number }) => {
+  getAllJobs: async (params?: { status?: string; user_id?: string; search?: string; date_from?: string; date_to?: string; limit?: number; offset?: number }) => {
     const response = await api.get<{ jobs: AdminJob[]; total: number; limit: number; offset: number }>('/admin/jobs', { params });
     return response.data;
+  },
+
+  bulkJobAction: async (action: 'cancel' | 'delete', jobIds: string[]) => {
+    const response = await api.post<{ success: string[]; failed: Array<{ job_id: string; error: string }> }>('/admin/jobs/bulk-action', {
+      action,
+      job_ids: jobIds
+    });
+    return response.data;
+  },
+
+  exportUsers: async () => {
+    const response = await api.get('/admin/users/export', {
+      responseType: 'blob'
+    });
+
+    // Download the CSV file
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
   },
 
   getJobLogs: async (jobId: string) => {

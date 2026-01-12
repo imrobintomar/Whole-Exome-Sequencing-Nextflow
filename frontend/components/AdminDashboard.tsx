@@ -17,6 +17,17 @@ export default function AdminDashboard() {
   const [authReady, setAuthReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // New features state
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30000);
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+  const [filters, setFilters] = useState({
+    status: '',
+    search: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+
   // Wait for Firebase auth to be ready
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -32,20 +43,31 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    if (!authReady) return;
+    if (!authReady || !autoRefresh) return;
 
     loadDashboardData();
-    // Refresh every 30 seconds
-    const interval = setInterval(loadDashboardData, 30000);
+    const interval = setInterval(loadDashboardData, refreshInterval);
     return () => clearInterval(interval);
-  }, [authReady]);
+  }, [authReady, autoRefresh, refreshInterval]);
+
+  // Reload when filters change
+  useEffect(() => {
+    if (!authReady) return;
+    loadDashboardData();
+  }, [filters]);
 
   const loadDashboardData = async () => {
     try {
+      const jobParams: any = { limit: 20 };
+      if (filters.status) jobParams.status = filters.status;
+      if (filters.search) jobParams.search = filters.search;
+      if (filters.dateFrom) jobParams.date_from = filters.dateFrom;
+      if (filters.dateTo) jobParams.date_to = filters.dateTo;
+
       const [dashboardStats, usersData, jobsData] = await Promise.all([
         adminApi.getDashboardStats(),
         adminApi.getAllUsers(),
-        adminApi.getAllJobs({ limit: 20 }),
+        adminApi.getAllJobs(jobParams),
       ]);
 
       setStats(dashboardStats);
@@ -96,6 +118,57 @@ export default function AdminDashboard() {
     } catch (err: any) {
       console.error('Error updating subscription:', err);
       alert(`Failed to update subscription plan: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const handleBulkAction = async (action: 'cancel' | 'delete') => {
+    if (selectedJobs.length === 0) {
+      alert('Please select jobs first');
+      return;
+    }
+
+    if (!confirm(`${action.toUpperCase()} ${selectedJobs.length} selected job(s)?`)) {
+      return;
+    }
+
+    try {
+      const result = await adminApi.bulkJobAction(action, selectedJobs);
+      alert(`Success: ${result.success.length}, Failed: ${result.failed.length}`);
+
+      if (result.failed.length > 0) {
+        console.error('Failed jobs:', result.failed);
+      }
+
+      setSelectedJobs([]);
+      loadDashboardData();
+    } catch (err: any) {
+      console.error('Bulk action error:', err);
+      alert('Failed to perform bulk action');
+    }
+  };
+
+  const handleExportUsers = async () => {
+    try {
+      await adminApi.exportUsers();
+    } catch (err: any) {
+      console.error('Export error:', err);
+      alert('Failed to export users');
+    }
+  };
+
+  const toggleJobSelection = (jobId: string) => {
+    setSelectedJobs(prev =>
+      prev.includes(jobId)
+        ? prev.filter(id => id !== jobId)
+        : [...prev, jobId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedJobs.length === jobs.length) {
+      setSelectedJobs([]);
+    } else {
+      setSelectedJobs(jobs.map(j => j.job_id));
     }
   };
 
@@ -262,7 +335,15 @@ export default function AdminDashboard() {
         {activeTab === 'users' && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">All Users ({users.length})</h3>
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">All Users ({users.length})</h3>
+                <button
+                  onClick={handleExportUsers}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm flex items-center gap-2"
+                >
+                  📥 Export to CSV
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
@@ -349,12 +430,101 @@ export default function AdminDashboard() {
         {activeTab === 'jobs' && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold">Recent Jobs ({jobs.length})</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Jobs Management ({jobs.length})</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setAutoRefresh(!autoRefresh)}
+                    className={`px-3 py-1 text-sm rounded ${autoRefresh ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}
+                  >
+                    {autoRefresh ? '⏸️ Pause' : '▶️ Resume'} Auto-refresh
+                  </button>
+                  <select
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                    className="px-3 py-1 text-sm border rounded"
+                  >
+                    <option value={10000}>10s</option>
+                    <option value={30000}>30s</option>
+                    <option value={60000}>1m</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                <input
+                  type="text"
+                  placeholder="Search by job ID or sample name..."
+                  value={filters.search}
+                  onChange={(e) => setFilters({...filters, search: e.target.value})}
+                  className="px-3 py-2 border rounded text-sm"
+                />
+                <select
+                  value={filters.status}
+                  onChange={(e) => setFilters({...filters, status: e.target.value})}
+                  className="px-3 py-2 border rounded text-sm"
+                >
+                  <option value="">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="running">Running</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => setFilters({...filters, dateFrom: e.target.value})}
+                  className="px-3 py-2 border rounded text-sm"
+                  placeholder="From"
+                />
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => setFilters({...filters, dateTo: e.target.value})}
+                  className="px-3 py-2 border rounded text-sm"
+                  placeholder="To"
+                />
+              </div>
+
+              {/* Bulk Actions */}
+              {selectedJobs.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-4 flex items-center gap-3">
+                  <span className="text-sm font-medium">{selectedJobs.length} selected</span>
+                  <button
+                    onClick={() => handleBulkAction('cancel')}
+                    className="px-3 py-1 bg-yellow-500 text-white rounded text-sm hover:bg-yellow-600"
+                  >
+                    Cancel Selected
+                  </button>
+                  <button
+                    onClick={() => handleBulkAction('delete')}
+                    className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+                  >
+                    Delete Selected
+                  </button>
+                  <button
+                    onClick={() => setSelectedJobs([])}
+                    className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                  >
+                    Clear Selection
+                  </button>
+                </div>
+              )}
             </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={selectedJobs.length === jobs.length && jobs.length > 0}
+                        onChange={toggleSelectAll}
+                        className="rounded"
+                      />
+                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sample</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
@@ -365,6 +535,14 @@ export default function AdminDashboard() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {jobs.map((job) => (
                     <tr key={job.job_id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={selectedJobs.includes(job.job_id)}
+                          onChange={() => toggleJobSelection(job.job_id)}
+                          className="rounded"
+                        />
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{job.sample_name}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-mono text-xs">
                         User #{job.user_id}

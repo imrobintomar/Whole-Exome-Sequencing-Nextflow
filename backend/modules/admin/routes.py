@@ -76,21 +76,40 @@ async def get_dashboard_stats(admin=Depends(require_admin)):
 async def get_all_jobs(
     status: str = None,
     user_id: str = None,
+    search: str = None,
+    date_from: str = None,
+    date_to: str = None,
     limit: int = 50,
     offset: int = 0,
     admin=Depends(require_admin)
 ):
     """
-    Get all jobs across all users
+    Get all jobs across all users with filtering
     """
     db = SessionLocal()
     try:
         query = db.query(Job)
 
+        # Filter by status
         if status:
             query = query.filter(Job.status == status)
+
+        # Filter by user
         if user_id:
             query = query.filter(Job.user_id == user_id)
+
+        # Search by job_id or sample_name
+        if search:
+            query = query.filter(
+                (Job.job_id.ilike(f"%{search}%")) |
+                (Job.sample_name.ilike(f"%{search}%"))
+            )
+
+        # Filter by date range
+        if date_from:
+            query = query.filter(Job.created_at >= date_from)
+        if date_to:
+            query = query.filter(Job.created_at <= date_to)
 
         total = query.count()
         jobs = query.order_by(Job.created_at.desc()).limit(limit).offset(offset).all()
@@ -403,3 +422,157 @@ async def get_system_metrics(admin=Depends(require_admin)):
         "storage": storage,
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+@router.post("/jobs/bulk-action")
+async def bulk_job_action(
+    action: str,
+    job_ids: list[str],
+    admin=Depends(require_admin)
+):
+    """
+    Perform bulk actions on multiple jobs
+    Supported actions: cancel, delete
+    """
+    db = SessionLocal()
+    try:
+        results = {
+            "success": [],
+            "failed": []
+        }
+
+        for job_id in job_ids:
+            try:
+                job = db.query(Job).filter(Job.job_id == job_id).first()
+                if not job:
+                    results["failed"].append({"job_id": job_id, "error": "Not found"})
+                    continue
+
+                if action == "delete":
+                    db.delete(job)
+                    results["success"].append(job_id)
+
+                elif action == "cancel":
+                    if job.status in ["running", "pending"]:
+                        job.status = "cancelled"
+                        job.error_message = "Cancelled by admin"
+                        results["success"].append(job_id)
+                    else:
+                        results["failed"].append({"job_id": job_id, "error": f"Cannot cancel job with status: {job.status}"})
+                else:
+                    results["failed"].append({"job_id": job_id, "error": f"Unknown action: {action}"})
+
+            except Exception as e:
+                results["failed"].append({"job_id": job_id, "error": str(e)})
+
+        db.commit()
+
+        # Log the bulk action
+        AuditService.log_action(
+            admin.firebase_uid,
+            f"bulk_{action}",
+            {"job_ids": job_ids, "success": len(results["success"]), "failed": len(results["failed"])},
+            f"Bulk {action} on {len(job_ids)} jobs"
+        )
+
+        return results
+    finally:
+        db.close()
+
+
+@router.get("/users/export")
+async def export_users(admin=Depends(require_admin)):
+    """
+    Export all users as CSV
+    """
+    from fastapi.responses import Response
+
+    db = SessionLocal()
+    try:
+        users = db.query(User).all()
+
+        # Create CSV header
+        csv_data = "UID,Email,Username,Created At,Jobs Count,Active Subscription\n"
+
+        for user in users:
+            # Count jobs for each user
+            jobs_count = db.query(Job).filter(Job.user_id == user.firebase_uid).count()
+
+            # Check subscription
+            subscription = db.query(Subscription).filter(
+                Subscription.user_id == user.firebase_uid,
+                Subscription.status == 'active'
+            ).first()
+
+            plan_name = "Free"
+            if subscription:
+                plan = db.query(SubscriptionPlan).filter(
+                    SubscriptionPlan.id == subscription.plan_id
+                ).first()
+                if plan:
+                    plan_name = plan.name
+
+            # Escape commas in fields
+            email = user.email.replace(',', ';') if user.email else ''
+            username = user.username.replace(',', ';') if user.username else ''
+            created_at = user.created_at.strftime('%Y-%m-%d %H:%M:%S') if user.created_at else ''
+
+            csv_data += f"{user.firebase_uid},{email},{username},{created_at},{jobs_count},{plan_name}\n"
+
+        return Response(
+            content=csv_data,
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename=users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            }
+        )
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/ban")
+async def ban_user(
+    user_uid: str,
+    reason: str = Query(..., description="Reason for banning"),
+    admin=Depends(require_admin)
+):
+    """Ban a user account"""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_banned = True
+        user.ban_reason = reason
+        user.banned_at = datetime.utcnow()
+        user.banned_by = admin.firebase_uid
+        db.commit()
+
+        AuditService.log_action(admin.firebase_uid, "ban_user", {"user_uid": user_uid, "reason": reason}, f"Banned user {user.email}")
+
+        return {"success": True, "message": f"User {user.email} has been banned", "user_uid": user_uid}
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/unban")
+async def unban_user(user_uid: str, admin=Depends(require_admin)):
+    """Unban a user account"""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_banned = False
+        user.ban_reason = None
+        user.banned_at = None
+        user.banned_by = None
+        db.commit()
+
+        AuditService.log_action(admin.firebase_uid, "unban_user", {"user_uid": user_uid}, f"Unbanned user {user.email}")
+
+        return {"success": True, "message": f"User {user.email} has been unbanned"}
+    finally:
+        db.close()

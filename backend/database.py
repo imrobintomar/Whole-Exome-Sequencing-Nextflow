@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, Enum as SQLEnum
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Enum as SQLEnum, Boolean, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
@@ -27,6 +27,13 @@ class User(Base):
     email = Column(String, index=True)
     username = Column(String)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Ban/suspend fields
+    is_active = Column(Boolean, default=True)
+    is_banned = Column(Boolean, default=False)
+    ban_reason = Column(Text, nullable=True)
+    banned_at = Column(DateTime, nullable=True)
+    banned_by = Column(String, nullable=True)  # Admin UID who banned
 
 class Job(Base):
     __tablename__ = "jobs"

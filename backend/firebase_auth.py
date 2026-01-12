@@ -58,7 +58,7 @@ async def get_current_user(
         
         # Check if user exists in database, if not create them
         user = db.query(User).filter(User.firebase_uid == uid).first()
-        
+
         if not user:
             print(f"Creating new user: {email} (UID: {uid})")
             user = User(
@@ -69,7 +69,21 @@ async def get_current_user(
             db.add(user)
             db.commit()
             db.refresh(user)
-        
+
+        # Check if user is banned
+        if user.is_banned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Account banned: {user.ban_reason or 'No reason provided'}",
+            )
+
+        # Check if user is inactive
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Account suspended. Please contact support.",
+            )
+
         return user
         
     except firebase_auth.InvalidIdTokenError:
