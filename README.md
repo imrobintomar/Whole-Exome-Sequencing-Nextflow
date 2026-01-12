@@ -1,129 +1,241 @@
-# Whole Exome Sequencing (WES) Pipeline
+# Whole Exome Sequencing (WES) Platform
 
-Production-ready Nextflow DSL2 pipeline for processing whole exome sequencing data from raw FASTQ files to annotated, filtered variants.
+**A production-ready, full-stack genomic analysis platform** combining a Nextflow DSL2 bioinformatics pipeline with SaaS-enabled FastAPI backend and modern React frontend for automated whole exome sequencing analysis from raw FASTQ files to annotated, filtered variants.
 
-## Pipeline Overview
+[![Pipeline](https://img.shields.io/badge/Pipeline-Nextflow%20DSL2-brightgreen)](https://www.nextflow.io/)
+[![Backend](https://img.shields.io/badge/Backend-FastAPI-009688)](https://fastapi.tiangolo.com/)
+[![Frontend](https://img.shields.io/badge/Frontend-Next.js%2014-000000)](https://nextjs.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+---
+
+## 🌟 Key Features
+
+### Core Analysis
+- ✅ **Automated WES Pipeline**: FASTQ → VCF → Annotated TSV (8-stage Nextflow workflow)
+- ✅ **Real-time Job Tracking**: Step-by-step pipeline progress monitoring
+- ✅ **ACMG Classification**: Automated variant pathogenicity prediction (ACMG/AMP 2015)
+- ✅ **Gene Panel Filtering**: PanelApp integration + ACMG Secondary Findings v3.2
+- ✅ **Genome Visualization**: IGV.js integration for BAM/VCF viewing
+- ✅ **Advanced Analytics**: Variant metrics, chromosome distribution, AF spectrum
+
+### Enterprise SaaS Features
+- 🔐 **Firebase Authentication**: Multi-user, OAuth support
+- 💳 **Stripe Billing**: Subscription management with usage tracking
+- 👨‍💼 **Admin Dashboard**: User/job management & system analytics
+- 📊 **Usage Tracking**: Monthly quotas (Free tier: 2 jobs/month)
+- 🛡️ **Security**: Audit logging, CORS protection, input validation
+- 💬 **Live Chat**: Support system integration (optional)
+
+### DevOps & Infrastructure
+- 🚀 **24/7 Deployment**: Systemd service management
+- 🌐 **ngrok Tunneling**: Public URL for local development
+- 🐳 **Containerization Ready**: Docker/Singularity support
+- 📈 **Dynamic Resources**: Auto-scaling based on system capacity
+- 🔄 **Pipeline Control**: Cancel, resume, rerun capabilities
+- 📝 **Comprehensive Logging**: Audit trails & error tracking
+
+---
+
+## 📊 Pipeline Overview
 
 ```
-FASTQ Files
+FASTQ Files (Paired-end)
     ↓
-[1] QC & Filtering (fastp)
+[1] Quality Control & Filtering (fastp)
     ↓
-[2] Alignment (BWA-MEM)
+[2] Alignment to hg38 (BWA-MEM)
     ↓
-[3] Sorting & QC (GATK SortSam + samtools flagstat)
+[3] Coordinate Sorting & QC (GATK SortSam + samtools flagstat)
     ↓
-[4] Mark Duplicates (GATK MarkDuplicates)
+[4] Duplicate Marking (GATK MarkDuplicates)
     ↓
 [5] Base Quality Score Recalibration (GATK BQSR)
     ↓
 [6] Variant Calling (GATK HaplotypeCaller)
     ↓
-[7] Annotation (1000 Genomes + ANNOVAR)
+[7] Multi-source Annotation (1000 Genomes + ANNOVAR)
     ↓
-[8] Filtering (SnpSift)
+[8] Filtering & UniqueID Assignment
     ↓
-Final TSV Output
+Final TSV Output (Chr:Start:Ref:Alt annotated variants)
 ```
 
-## Recent Fixes (v1.1)
+**Typical Runtime:** 24-48 hours per sample on standard workstation
 
-All critical issues have been resolved:
-- ✓ Fixed process name mismatches
-- ✓ Added BAM indexing for GATK compatibility
-- ✓ Removed hardcoded resources for dynamic allocation
-- ✓ Fixed filtering column numbers (AF and DP)
-- ✓ Added VCF compression and indexing
-- ✓ Added error handling for missing 1000G files
-- ✓ Replaced hardcoded thread counts with task.cpus
+---
 
-See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+## 🏗️ Architecture
 
-## Prerequisites
+### Technology Stack
 
-### Software Requirements
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| **Pipeline** | Nextflow DSL2 | Workflow orchestration |
+| **Backend** | FastAPI + Uvicorn | REST API & async processing |
+| **Frontend** | Next.js 14 + React 18 | Modern web interface |
+| **Database** | SQLite / PostgreSQL | Job tracking & user data |
+| **Auth** | Firebase Admin SDK | Authentication & authorization |
+| **Payments** | Stripe API | Subscription billing |
+| **Tunneling** | ngrok | Public URL for local dev |
+| **Styling** | Tailwind CSS + Shadcn UI | Component library |
+| **Visualization** | Recharts + IGV.js | Charts & genome browser |
 
-| Tool | Minimum Version | Purpose |
-|------|----------------|---------|
+### Bioinformatics Tools
+
+| Tool | Version | Purpose |
+|------|---------|---------|
 | Nextflow | ≥21.04 | Workflow engine |
-| BWA | ≥0.7.17 | Read alignment |
+| BWA | ≥0.7.17 | Read alignment (BWA-MEM) |
 | SAMtools | ≥1.17 | BAM manipulation |
 | GATK | ≥4.6.0 | Variant calling & processing |
 | fastp | ≥0.23.0 | Quality control |
-| bgzip/tabix | (any) | VCF compression/indexing |
-| Java | ≥1.8 | Required for GATK/SnpSift |
-| ANNOVAR | (latest) | Variant annotation |
-| SnpEff/SnpSift | ≥4.3 | Variant filtering |
+| ANNOVAR | latest | Variant annotation |
+| SnpSift/SnpEff | ≥4.3 | Variant filtering |
+| bgzip/tabix | any | VCF compression/indexing |
 
-### Reference Data Requirements
+---
 
-1. **Human Reference Genome (hg38)**
-   - `hg38.fa` - FASTA file
-   - `hg38.fa.fai` - FASTA index (create with `samtools faidx`)
-   - `hg38.dict` - Sequence dictionary (create with `gatk CreateSequenceDictionary`)
-   - BWA index files (`.amb`, `.ann`, `.bwt`, `.pac`, `.sa`)
+## 🚀 Quick Start
 
-2. **Known Sites VCF Files**
-   - Homo_sapiens_assembly38.known_indels.vcf.gz
-   - Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
-   - Both must be indexed with tabix (`.tbi` files)
+### Prerequisites
 
-3. **ANNOVAR Databases**
-   - refGeneWithVer
-   - dbnsfp42a
-   - clinvar_20240416
-   - gnomad40_exome
-   - avsnp150
-   - cosmic84_coding
-   - exac03
+1. **System Requirements**
+   - Linux/macOS (64-bit)
+   - 16GB+ RAM (32GB recommended)
+   - 200GB+ free disk space
+   - Java 1.8+, Python 3.10+
 
-4. **1000 Genomes VCF Files**
-   - `filtered_chr{1..22,X}.vcf` or `.vcf.gz`
+2. **Install Dependencies**
 
-## Installation
+   ```bash
+   # Using Conda (recommended)
+   conda create -n wes-pipeline -c bioconda \
+       nextflow bwa samtools gatk4 fastp bcftools
+   conda activate wes-pipeline
 
-### 1. Clone/Download Pipeline
+   # Or using package manager
+   sudo apt-get install bwa samtools bcftools default-jre
+   ```
+
+3. **Download Reference Data**
+   - Human genome (hg38) with indices
+   - GATK known sites VCF files
+   - ANNOVAR databases
+   - See [Reference Data Requirements](#reference-data-requirements) below
+
+### Installation
 
 ```bash
-cd /path/to/your/workspace
-# Pipeline files should be in ./WholeExome/
+# 1. Clone repository
+git clone <repository-url>
+cd WholeExome
+
+# 2. Configure backend environment
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Create .env file
+cat > .env << EOF
+SECRET_KEY=your-secret-key-here
+DATABASE_URL=sqlite:///./wes_pipeline.db
+CORS_ORIGINS=http://localhost:3000
+FIREBASE_CREDENTIALS=path/to/firebase-credentials.json
+EOF
+
+# 3. Configure frontend
+cd ../frontend
+npm install
+
+# Create .env.local
+cat > .env.local << EOF
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+EOF
+
+# 4. Update Nextflow configuration
+# Edit nextflow.config with your paths (see Configuration section)
+
+# 5. Validate setup
+./validate_setup.sh
 ```
 
-### 2. Install Dependencies
+### Running the Platform
 
-**Option A: Using Conda (Recommended)**
+#### Option 1: Development Mode
+
 ```bash
-conda create -n wes-pipeline -c bioconda \
-    nextflow bwa samtools gatk4 fastp bcftools
-conda activate wes-pipeline
+# Terminal 1: Start backend
+cd backend
+source venv/bin/activate
+python main.py
+
+# Terminal 2: Start frontend
+cd frontend
+npm run dev
+
+# Visit: http://localhost:3000
 ```
 
-**Option B: System Package Manager**
+#### Option 2: Production Mode (24/7 with ngrok)
+
 ```bash
-# Ubuntu/Debian
-sudo apt-get install bwa samtools bcftools
+# One-command setup
+cd backend
+./start-backend-service-improved.sh
 
-# Download GATK from https://github.com/broadinstitute/gatk/releases
-# Install fastp from https://github.com/OpenGene/fastp
+# This will:
+# ✅ Start backend as systemd service
+# ✅ Start ngrok tunnel with public URL
+# ✅ Enable auto-start on boot
+# ✅ Enable auto-restart on failure
+
+# Manage services
+./manage-services.sh status    # Check status
+./manage-services.sh url       # Get public URL
+./manage-services.sh logs all  # View logs
+./manage-services.sh restart   # Restart services
 ```
 
-### 3. Configure Paths
+#### Option 3: Direct Pipeline Execution (No Web UI)
 
-Edit [`nextflow.config`](nextflow.config) to match your system:
+```bash
+# Run pipeline directly
+nextflow run main.nf \
+  --input_dir /path/to/fastq \
+  --output_dir /path/to/results
+
+# With resume capability
+nextflow run main.nf -resume
+
+# With reports
+nextflow run main.nf -with-trace -with-report -with-timeline
+```
+
+---
+
+## ⚙️ Configuration
+
+### 1. Nextflow Configuration (nextflow.config)
+
+Edit the following paths to match your system:
 
 ```groovy
 params {
     // INPUT/OUTPUT
-    input_dir   = '/path/to/your/fastq/files'
+    input_dir   = '/path/to/fastq/files'
     output_dir  = '/path/to/output/directory'
 
-    // REFERENCE GENOME
+    // REFERENCE GENOME (hg38)
     reference        = '/path/to/hg38/hg38.fa'
     reference_index  = '/path/to/hg38/hg38.fa.fai'
     reference_dict   = '/path/to/hg38/hg38.dict'
-    bwa_index        = '/path/to/hg38/hg38'
+    bwa_index        = '/path/to/hg38/hg38'  # BWA index prefix
 
-    // KNOWN SITES
+    // KNOWN SITES (for GATK BQSR)
     known_sites = [
         '/path/to/Homo_sapiens_assembly38.known_indels.vcf.gz',
         '/path/to/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz'
@@ -131,292 +243,731 @@ params {
 
     // ANNOTATION TOOLS
     annovar_dir      = '/path/to/annovar'
-    annovar_db       = '/path/to/annovar/hg38_humandb'
-    annovar_xreffile = '/path/to/annovar/dbnsfp/gene/dbNSFP4.7_gene'
+    annovar_db       = '/path/to/annovar/humandb'
+    annovar_xreffile = '/path/to/annovar/dbNSFP4.7_gene'
     thousand_genomes_dir = '/path/to/1000genomes/vcfs'
     snpsift_jar      = '/path/to/SnpSift.jar'
 
     // FILTERING THRESHOLDS
-    max_af     = 0.05   // Maximum allele frequency
-    min_depth = 5       // Minimum read depth
+    max_af     = 0.05   // Maximum allele frequency (5%)
+    min_depth  = 5      // Minimum read depth
+
+    // OPTIONAL: Exome intervals (60x faster than whole genome)
+    intervals  = null   // Or: '/path/to/exome_targets.bed'
+}
+
+// RESOURCE PROFILES
+env {
+    GATK_HOME = System.getenv('GATK_HOME') ?: '/usr/local/bin/gatk'
 }
 ```
 
-### 4. Validate Setup
-
-Run the validation script to check your configuration:
+### 2. Backend Configuration (backend/.env)
 
 ```bash
-cd /media/drprabudh/m3/Nextflow-Script/WholeExome
-./validate_setup.sh
+# Security
+SECRET_KEY=your-long-random-secret-key
+ALGORITHM=HS256
+
+# Database
+DATABASE_URL=sqlite:///./wes_pipeline.db
+# For production: postgresql://user:password@localhost/wes_db
+
+# Directories
+UPLOAD_DIR=./uploads
+RESULTS_DIR=./results
+
+# Pipeline
+NEXTFLOW_SCRIPT=../main.nf
+REFERENCE_GENOME=/path/to/hg38/hg38.fa
+
+# CORS
+CORS_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
+
+# Firebase Authentication
+FIREBASE_CREDENTIALS=/path/to/firebase-admin-credentials.json
+
+# Stripe (optional - for billing)
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Admin users (Firebase UIDs)
+ADMIN_USER_UIDS=uid1,uid2,uid3
 ```
 
-This will check:
-- Software availability
-- Reference file existence
-- Index file presence
-- Database completeness
-- Configuration correctness
-
-## Usage
-
-### Basic Execution
+### 3. Frontend Configuration (frontend/.env.local)
 
 ```bash
-nextflow run main.nf
+# API
+NEXT_PUBLIC_API_URL=http://localhost:8000
+# For production: https://your-ngrok-url.ngrok-free.dev
+
+# Firebase
+NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
 ```
 
-### Common Options
+### 4. ngrok Configuration (ngrok.yml)
+
+```yaml
+version: "2"
+authtoken: YOUR_NGROK_AUTHTOKEN_HERE
+
+tunnels:
+  wes-backend:
+    proto: http
+    addr: 8000
+    schemes:
+      - https
+    inspect: true
+```
+
+Get your authtoken from: https://dashboard.ngrok.com/get-started/your-authtoken
+
+---
+
+## 📦 Reference Data Requirements
+
+### 1. Human Reference Genome (hg38)
 
 ```bash
-# Custom input directory
-nextflow run main.nf --input_dir /path/to/fastq
+# Download from GATK Resource Bundle
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.fasta.fai
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.dict
 
-# Custom output directory
-nextflow run main.nf --output_dir /path/to/results
-
-# Resume failed pipeline
-nextflow run main.nf -resume
-
-# Generate execution reports
-nextflow run main.nf -with-trace -with-report -with-timeline -with-dag
+# Create BWA index
+bwa index -a bwtsw Homo_sapiens_assembly38.fasta
 ```
 
-### Resource Management Profiles
-
-Control resource allocation:
+### 2. Known Sites VCF Files
 
 ```bash
-# Default: 80% of system resources
-nextflow run main.nf -profile standard
-
-# Conservative: 50% of resources (for shared systems)
-nextflow run main.nf -profile conservative
-
-# Aggressive: 95% of resources (dedicated systems)
-nextflow run main.nf -profile aggressive
+# Download from GATK Resource Bundle
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.known_indels.vcf.gz
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+wget https://storage.googleapis.com/genomics-public-data/resources/broad/hg38/v0/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
 ```
 
-### Container Execution (Future)
+### 3. ANNOVAR Databases
 
 ```bash
-# Using Docker
-nextflow run main.nf -profile docker
+# Download ANNOVAR (requires registration)
+# Visit: https://annovar.openbioinformatics.org/en/latest/user-guide/download/
 
-# Using Singularity
-nextflow run main.nf -profile singularity
+# Download required databases
+cd annovar
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar refGeneWithVer humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar dbnsfp42a humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar clinvar_20240416 humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar gnomad40_exome humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar avsnp150 humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar cosmic84_coding humandb/
+./annotate_variation.pl -buildver hg38 -downdb -webfrom annovar exac03 humandb/
+
+# Download dbNSFP gene database
+wget https://dbnsfp.s3.amazonaws.com/dbNSFP4.7_gene.complete.gz
+gunzip dbNSFP4.7_gene.complete.gz
 ```
 
-### Help Message
+### 4. 1000 Genomes VCF Files (Optional)
 
-```bash
-nextflow run main.nf --help
+Download filtered VCF files for each chromosome (chr1-chr22, chrX) for population frequency annotation.
+
+---
+
+## 📂 Input Data Format
+
+The pipeline expects **paired-end FASTQ files** with this naming convention:
+
 ```
-
-## Input Data Format
-
-The pipeline expects paired-end FASTQ files with this naming convention:
-
-```
-SAMPLE1_1.fastq.gz
-SAMPLE1_2.fastq.gz
+SAMPLE1_1.fastq.gz  (Read 1)
+SAMPLE1_2.fastq.gz  (Read 2)
 SAMPLE2_1.fastq.gz
 SAMPLE2_2.fastq.gz
 ```
 
-Pattern: `*_{1,2}.fastq.gz`
+**Pattern:** `*_{1,2}.fastq.gz`
 
-Place all FASTQ files in the input directory specified by `params.input_dir`.
+Place all FASTQ files in the directory specified by `params.input_dir`.
 
-## Output Structure
+---
+
+## 📁 Output Structure
 
 ```
 output_dir/
-├── filtered_fastp/          # QC-filtered FASTQ files
+├── filtered_fastp/              # Quality-controlled FASTQ
 │   ├── SAMPLE1_1_filtered.fastq.gz
 │   ├── SAMPLE1_2_filtered.fastq.gz
-│   └── SAMPLE1.html         # QC report
-├── Mapsam/                  # BAM files
+│   └── SAMPLE1.html             # QC report
+│
+├── Mapsam/                      # BAM files
 │   ├── SAMPLE1.sorted.bam
 │   ├── SAMPLE1.sorted.bam.bai
 │   ├── SAMPLE1_markdup.sorted.bam
 │   ├── SAMPLE1_markdup.sorted.bam.bai
-│   ├── SAMPLE1_recall.bam   # Final BAM
-│   ├── SAMPLE1.Stat.txt     # Flagstat report
-│   └── SAMPLE1_recall.table # BQSR recalibration table
-├── Germline_VCF/            # Variant files
-│   ├── SAMPLE1.vcf.gz
+│   ├── SAMPLE1_recall.bam       # 🎯 Final recalibrated BAM
+│   ├── SAMPLE1_recall.bam.bai
+│   ├── SAMPLE1.Stat.txt         # Alignment statistics
+│   └── SAMPLE1_recall.table     # BQSR recalibration table
+│
+├── Germline_VCF/                # Variant files
+│   ├── SAMPLE1.vcf.gz           # Raw variants
 │   ├── SAMPLE1.vcf.gz.tbi
-│   ├── SAMPLE1_1000genome.vcf.gz
-│   ├── SAMPLE1.annovar.hg38_multianno.vcf
-│   └── SAMPLE1_final_annotated.tsv  # FINAL OUTPUT
-└── logs/                    # Execution reports
-    ├── trace.txt
-    ├── report.html
-    ├── timeline.html
-    └── pipeline.svg         # DAG visualization
+│   ├── SAMPLE1_1000genome.vcf.gz  # 1000G annotated
+│   ├── SAMPLE1.annovar.hg38_multianno.txt  # ANNOVAR annotations
+│   └── SAMPLE1_Final_.txt       # 🎯 FINAL FILTERED OUTPUT
+│
+└── logs/                        # Execution reports
+    ├── trace.txt                # Resource usage
+    ├── report.html              # Execution summary
+    ├── timeline.html            # Timeline visualization
+    └── dag.svg                  # Pipeline DAG
 ```
 
-## Output Files Explained
+---
 
-### Final Output: `*_final_annotated.tsv`
+## 📊 Final Output Explained
 
-Tab-separated file containing filtered variants with annotations:
+### `SAMPLE_Final_.txt` (TSV Format)
 
-| Column | Description |
-|--------|-------------|
-| CHROM | Chromosome |
-| POS | Position |
-| ID | Variant ID (dbSNP) |
-| REF | Reference allele |
-| ALT | Alternate allele |
-| QUAL | Variant quality score |
-| FILTER | Filter status |
-| DP | Read depth |
-| AC | Allele count |
-| AF | Allele frequency |
-| AN | Total alleles |
-| ExonicFunc | Functional effect |
-| Gene | Gene name |
-| SIFT_pred | SIFT prediction |
-| Polyphen2_HDIV_pred | PolyPhen-2 prediction |
-| ... | Additional annotations |
+The final output contains filtered, annotated variants with a **UniqueID** column:
+
+| Column | Description | Example |
+|--------|-------------|---------|
+| **UniqueID** | Chr:Start:Ref:Alt identifier | chr1:12345:A:G |
+| Chr | Chromosome | chr1, chr2, ..., chrX |
+| Start | Genomic position (1-based) | 12345678 |
+| End | End position | 12345678 |
+| Ref | Reference allele | A |
+| Alt | Alternate allele | G |
+| Func.refGeneWithVer | Functional region | exonic, intronic, UTR3, etc. |
+| Gene.refGeneWithVer | Gene name | BRCA1, TP53, etc. |
+| GeneDetail.refGeneWithVer | Gene details | - |
+| ExonicFunc.refGeneWithVer | Exonic function | missense, nonsense, frameshift, etc. |
+| AAChange.refGeneWithVer | Amino acid change | BRCA1:c.5266dupC:p.Gln1756fs |
+| AF | Allele frequency | 0.0234 (2.34%) |
+| DP | Read depth | 45 |
+| QUAL | Variant quality score | 3456.78 |
+| SIFT_pred | SIFT prediction | D (deleterious) or T (tolerated) |
+| Polyphen2_HDIV_pred | PolyPhen prediction | D (damaging), P (possibly), B (benign) |
+| CADD_phred | CADD score | 25.3 (higher = more deleterious) |
+| REVEL_score | REVEL score | 0.85 (0-1, higher = more pathogenic) |
+| CLNSIG | ClinVar significance | Pathogenic, Benign, VUS, etc. |
+| gnomAD_exome_AF | gnomAD allele frequency | 0.000123 |
 
 **Filtering Applied:**
-- Allele frequency (AF) ≤ 0.05
+- Allele frequency (AF) ≤ 0.05 (5%)
 - Read depth (DP) ≥ 5
-- Non-missing values
+- Non-missing values only
 
-## Troubleshooting
+---
 
-### Pipeline Fails at Alignment
+## 🔌 API Endpoints
 
-**Symptom:** BWA-MEM process fails
-**Solution:** Check BWA index files exist and are complete
+### Job Management
+
 ```bash
-ls -lh /path/to/hg38/hg38.{amb,ann,bwt,pac,sa}
+# Submit new job with FASTQ files
+POST /jobs/submit
+  - Form data: sample_name, fastq_r1, fastq_r2
+  - Returns: job_id, status
+
+# Submit with billing enforcement
+POST /jobs/submit-with-billing
+  - Same as above, but checks subscription limits
+
+# List user's jobs
+GET /jobs
+  - Returns: array of job objects
+
+# Get job details
+GET /jobs/{job_id}
+  - Returns: job details, current step, file paths
+
+# Control pipeline
+POST /jobs/{job_id}/cancel     # Stop running job
+POST /jobs/{job_id}/resume     # Resume failed job
+POST /jobs/{job_id}/rerun      # Restart from scratch
+
+# Delete job
+DELETE /jobs/{job_id}           # Remove job + files
 ```
 
-### GATK Tools Fail with "Index not found"
+### File Download
 
-**Symptom:** BaseRecalibrator or HaplotypeCaller fails
-**Solution:** The updated pipeline automatically creates BAM indices. If error persists:
 ```bash
-# Manually index a BAM file
-samtools index your_file.bam
+# Download result files
+GET /jobs/{job_id}/download/bam              # Final BAM file
+GET /jobs/{job_id}/download/bam.bai          # BAM index
+GET /jobs/{job_id}/download/raw_vcf          # Raw VCF
+GET /jobs/{job_id}/download/raw_vcf.tbi      # VCF index
+GET /jobs/{job_id}/download/annotated_vcf    # ANNOVAR TXT
+GET /jobs/{job_id}/download/filtered_tsv     # Final TSV
+
+# Download gene-filtered results
+POST /jobs/{job_id}/download/filtered
+  - Body: { "genes": ["BRCA1", "TP53", ...] }
+  - Returns: TSV with only specified genes
 ```
 
-### Known Sites Files Not Found
+### Variant Analysis
 
-**Symptom:** BaseRecalibrator can't find known sites
-**Solution:** Check VCF files are indexed
 ```bash
-tabix -p vcf /path/to/known_sites.vcf.gz
+# ACMG classification (single variant)
+POST /classify/acmg
+  - Body: variant object (consequence, gene, AF, scores, etc.)
+  - Returns: classification (P/LP/VUS/LB/B) + evidence
+
+# Classify all variants in job
+POST /jobs/{job_id}/classify
+  - Returns: all variants with ACMG classifications
+
+# Get variant metrics for visualization
+GET /jobs/{job_id}/variant-metrics
+  - Returns: chromosome distribution, AF spectrum, consequence breakdown
 ```
 
-### Out of Memory Errors
+### Gene Panels
 
-**Symptom:** Process killed with exit code 137
-**Solution:** The pipeline has automatic retry with increased memory. If still failing:
-1. Use conservative profile: `-profile conservative`
-2. Increase `maxMemoryGB` in [nextflow.config:52](nextflow.config#L52)
-
-### SnpSift Not Found
-
-**Symptom:** Annotation or filtering fails
-**Solution:** Update `params.snpsift_jar` in config:
 ```bash
-# Find SnpSift
-find /usr /opt -name "SnpSift.jar"
+# Search PanelApp
+GET /panels/search?query=cardiomyopathy
+  - Returns: matching panels with IDs
 
-# Update nextflow.config line 41
-params.snpsift_jar = '/actual/path/to/SnpSift.jar'
+# Get panel genes
+GET /panels/{panel_id}/genes?confidence_level=3
+  - Returns: gene list from panel
+
+# Get ACMG Secondary Findings (v3.2)
+GET /panels/acmg-sf
+  - Returns: 81 ACMG-SF genes
+
+# Apply gene panel filter to job
+POST /jobs/{job_id}/apply-panel
+  - Body: { "genes": ["BRCA1", "TP53", ...] }
+  - Returns: filtered variants + statistics
 ```
 
-### 1000 Genomes Annotation Warnings
+### Billing (SaaS Module)
 
-**Symptom:** "Warning: 1000G file for chrX not found"
-**Solution:** This is informational - pipeline continues with available chromosomes. To fix:
-- Download missing chromosome VCFs
-- Ensure naming: `filtered_chr{1..22,X}.vcf[.gz]`
+```bash
+GET /billing/plans                    # Available subscription plans
+GET /billing/subscription             # User's current subscription
+POST /billing/subscribe               # Start subscription
+POST /billing/checkout                # Create Stripe checkout session
+```
 
-## Performance Optimization
+### Admin (SaaS Module)
 
-### Recommended Resources
+```bash
+GET /admin/users                      # List all users
+GET /admin/jobs                       # List all jobs
+POST /admin/users/{uid}/promote       # Grant admin status
+GET /admin/analytics                  # System analytics
+```
+
+---
+
+## 🎯 Usage Examples
+
+### Via Web Interface
+
+1. **Login** → Firebase authentication
+2. **Dashboard** → Click "New Job"
+3. **Upload** → Drag-drop FASTQ files
+4. **Submit** → Job starts automatically
+5. **Monitor** → Real-time progress tracking
+6. **Results** → Download files, apply filters, classify variants
+
+### Via API (cURL)
+
+```bash
+# Get authentication token from Firebase first
+TOKEN="your-firebase-id-token"
+
+# Submit job
+curl -X POST http://localhost:8000/jobs/submit \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "sample_name=SAMPLE001" \
+  -F "fastq_r1=@/path/to/sample_R1.fastq.gz" \
+  -F "fastq_r2=@/path/to/sample_R2.fastq.gz"
+
+# Check status
+JOB_ID="uuid-from-response"
+curl http://localhost:8000/jobs/$JOB_ID \
+  -H "Authorization: Bearer $TOKEN"
+
+# Download final TSV
+curl http://localhost:8000/jobs/$JOB_ID/download/filtered_tsv \
+  -H "Authorization: Bearer $TOKEN" \
+  -o results.tsv
+
+# Apply gene panel filter
+curl -X POST http://localhost:8000/jobs/$JOB_ID/apply-panel \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"genes": ["BRCA1", "BRCA2", "TP53"]}'
+```
+
+### Via Direct Pipeline
+
+```bash
+# Run pipeline for multiple samples
+nextflow run main.nf \
+  --input_dir /data/fastq \
+  --output_dir /data/results \
+  -profile aggressive \
+  -resume
+
+# With execution reports
+nextflow run main.nf \
+  -with-trace \
+  -with-report \
+  -with-timeline \
+  -with-dag flowchart.svg
+```
+
+---
+
+## 🔧 Resource Management
+
+### Profiles
+
+```bash
+# Conservative (50% resources - shared systems)
+nextflow run main.nf -profile conservative
+
+# Standard (80% resources - default)
+nextflow run main.nf -profile standard
+
+# Aggressive (95% resources - dedicated systems)
+nextflow run main.nf -profile aggressive
+```
+
+### Recommended System Resources
+
+| Component | Minimum | Recommended | Optimal |
+|-----------|---------|-------------|---------|
+| **CPUs** | 8 cores | 16 cores | 32+ cores |
+| **RAM** | 16 GB | 32 GB | 64+ GB |
+| **Storage** | 200 GB | 500 GB | 1+ TB SSD |
+| **Network** | 10 Mbps | 100 Mbps | 1 Gbps |
+
+### Per-Process Resource Usage
 
 | Step | CPUs | Memory | Time (per sample) |
 |------|------|--------|-------------------|
-| fastp | 4-8 | 8 GB | 30-60 min |
-| BWA-MEM | 16-32 | 32-64 GB | 4-8 hours |
-| GATK Sort | 4-8 | 16-32 GB | 1-2 hours |
-| MarkDuplicates | 8-16 | 32-48 GB | 2-4 hours |
-| BQSR | 16-32 | 32-48 GB | 4-8 hours |
-| HaplotypeCaller | 16-32 | 32-64 GB | 6-12 hours |
-| Annotation | 8-16 | 16-32 GB | 2-6 hours |
+| fastp | 25% | 20% | 30-60 min |
+| BWA-MEM | 80% | 75% | 4-8 hours |
+| SortSam | 40% | 60% | 1-2 hours |
+| MarkDuplicates | 40% | 60% | 2-4 hours |
+| BQSR | 85% | 70% | 4-8 hours |
+| HaplotypeCaller | 85% | 75% | 6-12 hours |
+| ANNOVAR | 80% | 65% | 2-6 hours |
 
-**Total Runtime:** ~24-48 hours per sample on a typical workstation
+---
 
-### Speeding Up the Pipeline
+## 🛠️ Service Management
 
-1. **Increase parallelism:** Process multiple samples simultaneously
-2. **Use faster storage:** SSD/NVMe for working directory
-3. **Optimize resources:** Use `-profile aggressive` on dedicated systems
-4. **Enable caching:** Always use `-resume` when rerunning
+### Using manage-services.sh (Recommended)
 
-## Advanced Configuration
+```bash
+# Check status of all services
+./backend/manage-services.sh status
 
-### Custom Filtering Thresholds
+# Start all services (backend + ngrok)
+./backend/manage-services.sh start
 
-Edit [nextflow.config:43-44](nextflow.config#L43-L44):
-```groovy
-params.max_af     = 0.01   // Stricter: rare variants only
-params.min_depth = 10      // Higher quality threshold
+# Stop all services
+./backend/manage-services.sh stop
+
+# Restart all services
+./backend/manage-services.sh restart
+
+# View logs
+./backend/manage-services.sh logs backend    # Backend only
+./backend/manage-services.sh logs ngrok      # ngrok only
+./backend/manage-services.sh logs all        # Both together
+
+# Get public ngrok URL
+./backend/manage-services.sh url
+
+# Enable/disable auto-start on boot
+./backend/manage-services.sh enable
+./backend/manage-services.sh disable
 ```
 
-### Modify Resource Allocation
+### Using systemctl Directly
 
-Edit resource percentages in [nextflow.config:54-58](nextflow.config#L54-L58):
-```groovy
-def modeScale = [
-    auto:         [cpu: 0.8, mem: 0.8],   // Default
-    conservative: [cpu: 0.5, mem: 0.5],   // Safer
-    aggressive:   [cpu: 0.95, mem: 0.95]  // Maximum
-]
+```bash
+# Backend service
+sudo systemctl status atgcflow-backend.service
+sudo systemctl start atgcflow-backend.service
+sudo systemctl stop atgcflow-backend.service
+sudo systemctl restart atgcflow-backend.service
+
+# ngrok service
+sudo systemctl status atgcflow-ngrok.service
+sudo systemctl start atgcflow-ngrok.service
+sudo systemctl stop atgcflow-ngrok.service
+sudo systemctl restart atgcflow-ngrok.service
+
+# View logs
+sudo journalctl -u atgcflow-backend.service -f
+sudo journalctl -u atgcflow-ngrok.service -f
 ```
 
-### Process-Specific Settings
+---
 
-Adjust individual process resources in [nextflow.config:96-187](nextflow.config#L96-L187):
-```groovy
-withName: bwaMem {
-    cpus   = cpusPct(90)   // Use 90% of available CPUs
-    memory = memPct(80)    // Use 80% of available memory
-    time   = '24h'         // Max runtime
-}
+## 🔐 Security
+
+### Authentication & Authorization
+
+- **Firebase Admin SDK**: Server-side token verification
+- **JWT Sessions**: Secure session management
+- **Role-based Access**: Admin vs. regular user permissions
+- **Per-user Isolation**: Users can only access their own jobs
+
+### Security Features
+
+- ✅ HTTPS-only communication (ngrok tunneling)
+- ✅ CORS policy enforcement
+- ✅ Input validation (Pydantic schemas)
+- ✅ SQL injection protection (SQLAlchemy ORM)
+- ✅ File upload validation (content type + size limits)
+- ✅ Audit logging (all user actions)
+- ✅ Rate limiting (optional via middleware)
+- ✅ IP blocking (security patch available)
+
+### Apply Security Patch
+
+```bash
+# Recommended for production deployments
+./backend/apply-security-patch.sh
+
+# This adds:
+# - Rate limiting (60 requests/min per IP)
+# - Attack pattern detection
+# - Automatic IP banning
+# - Request logging
 ```
 
-## Citation
+See [backend/SECURITY-PATCH.md](backend/SECURITY-PATCH.md) for details.
 
-If you use this pipeline, please cite the tools:
+---
 
-- **Nextflow:** Di Tommaso, P., et al. (2017). Nat Biotechnol. 35, 316-319
-- **BWA:** Li, H. and Durbin, R. (2009). Bioinformatics 25, 1754-1760
-- **GATK:** McKenna, A., et al. (2010). Genome Res. 20, 1297-1303
-- **fastp:** Chen, S., et al. (2018). Bioinformatics 34, i884-i890
-- **ANNOVAR:** Wang, K., et al. (2010). Nucleic Acids Res. 38, e164
+## 🐛 Troubleshooting
 
-## Support
+### Pipeline Issues
 
-- **Issues:** Report bugs or request features via GitHub issues
-- **Documentation:** See [CHANGELOG.md](CHANGELOG.md) for version history
-- **Validation:** Run `./validate_setup.sh` before reporting issues
+**Pipeline fails at alignment:**
+```bash
+# Check BWA index files
+ls -lh /path/to/hg38/hg38.{amb,ann,bwt,pac,sa}
 
-## License
+# Rebuild if missing
+bwa index -a bwtsw hg38.fa
+```
 
-This pipeline is provided as-is for academic and research use.
+**GATK fails with "Index not found":**
+```bash
+# Pipeline auto-creates indices, but if needed:
+samtools index your_file.bam
+```
 
-## Author
+**Out of memory errors (exit code 137):**
+```bash
+# Use conservative profile
+nextflow run main.nf -profile conservative
 
-Robin Tomar
-Version: 1.1
-Last Updated: 2026-01-01
+# Or increase max memory in nextflow.config
+```
+
+**SnpSift not found:**
+```bash
+# Find SnpSift.jar
+find /usr /opt -name "SnpSift.jar"
+
+# Update nextflow.config
+params.snpsift_jar = '/actual/path/to/SnpSift.jar'
+```
+
+### Backend Issues
+
+**Backend won't start:**
+```bash
+# Check logs
+./backend/manage-services.sh logs backend
+
+# Or view directly
+tail -f backend/logs/backend.log
+```
+
+**ngrok tunnel fails:**
+```bash
+# Check authentication
+ngrok config check
+
+# Add token if needed
+ngrok config add-authtoken YOUR_TOKEN
+
+# View ngrok logs
+./backend/manage-services.sh logs ngrok
+```
+
+**Database errors:**
+```bash
+# Reinitialize database
+cd backend
+rm wes_pipeline.db
+python -c "from database import init_db; init_db()"
+```
+
+**CORS errors in frontend:**
+```bash
+# Add frontend URL to backend/.env
+CORS_ORIGINS=http://localhost:3000,https://your-frontend.vercel.app
+
+# Restart backend
+./backend/manage-services.sh restart
+```
+
+### Job Failures
+
+**Job stuck in "Running" state:**
+```bash
+# Check Nextflow process
+ps aux | grep nextflow
+
+# View .nextflow.log
+cat .nextflow.log
+
+# Resume pipeline
+nextflow run main.nf -resume
+```
+
+**Job failed - need to resume:**
+```bash
+# Via API
+curl -X POST http://localhost:8000/jobs/{job_id}/resume \
+  -H "Authorization: Bearer $TOKEN"
+
+# Or via Web UI: Job Details → Resume
+```
+
+---
+
+## 📈 Performance Optimization
+
+### Speed Up Pipeline
+
+1. **Use exome intervals** (60x faster than whole genome):
+   ```groovy
+   params.intervals = '/path/to/exome_targets.bed'
+   ```
+
+2. **Increase parallelism** (process multiple samples):
+   ```groovy
+   executor {
+       queueSize = 12  // Max concurrent processes
+   }
+   ```
+
+3. **Use faster storage** (SSD/NVMe for work directory)
+
+4. **Optimize resources** (`-profile aggressive` on dedicated systems)
+
+5. **Enable caching** (always use `-resume` when rerunning)
+
+### Reduce Disk Usage
+
+```bash
+# Clean work directory after successful run
+nextflow clean -f
+
+# Remove intermediate files
+rm -rf work/
+
+# Compress old results
+tar -czf old_results.tar.gz results/
+```
+
+---
+
+## 📚 Documentation
+
+- **[NGROK-SETUP-GUIDE.md](NGROK-SETUP-GUIDE.md)** - ngrok tunneling setup
+- **[backend/SECURITY-PATCH.md](backend/SECURITY-PATCH.md)** - Security hardening
+- **[backend/UPGRADE-NOTES.md](backend/UPGRADE-NOTES.md)** - Migration guide
+- **[QUICK-START-24-7.md](QUICK-START-24-7.md)** - 24/7 deployment guide
+
+---
+
+## 🎓 Citation
+
+If you use this pipeline in your research, please cite the underlying tools:
+
+- **Nextflow**: Di Tommaso, P., et al. (2017). Nextflow enables reproducible computational workflows. *Nat Biotechnol* 35, 316-319.
+- **BWA**: Li, H. and Durbin, R. (2009). Fast and accurate short read alignment with Burrows-Wheeler transform. *Bioinformatics* 25, 1754-1760.
+- **GATK**: McKenna, A., et al. (2010). The Genome Analysis Toolkit: a MapReduce framework for analyzing next-generation DNA sequencing data. *Genome Res* 20, 1297-1303.
+- **fastp**: Chen, S., et al. (2018). fastp: an ultra-fast all-in-one FASTQ preprocessor. *Bioinformatics* 34, i884-i890.
+- **ANNOVAR**: Wang, K., et al. (2010). ANNOVAR: functional annotation of genetic variants from high-throughput sequencing data. *Nucleic Acids Res* 38, e164.
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+For major changes, please open an issue first to discuss what you would like to change.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+
+**Robin Tomar**
+Version: 2.0
+Last Updated: 2026-01-12
+
+---
+
+## 🆘 Support
+
+- **Issues**: Report bugs via GitHub Issues
+- **Validation**: Run `./validate_setup.sh` before reporting issues
+- **Service Status**: `./backend/manage-services.sh status`
+- **Logs**: `./backend/manage-services.sh logs all`
+
+---
+
+## 🔗 Links
+
+- **Nextflow**: https://www.nextflow.io/
+- **GATK**: https://gatk.broadinstitute.org/
+- **ANNOVAR**: https://annovar.openbioinformatics.org/
+- **FastAPI**: https://fastapi.tiangolo.com/
+- **Next.js**: https://nextjs.org/
+- **Firebase**: https://firebase.google.com/
+- **Stripe**: https://stripe.com/
+
+---
+
+**🎉 Your comprehensive WES analysis platform is ready!**
