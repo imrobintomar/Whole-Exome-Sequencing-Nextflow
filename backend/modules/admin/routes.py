@@ -187,7 +187,12 @@ async def get_all_users(admin=Depends(require_admin)):
                 "usage": {
                     "jobs_executed": usage.jobs_executed if usage else 0,
                     "jobs_limit": usage.jobs_limit if usage else 2
-                } if usage else None
+                } if usage else None,
+                "is_active": user.is_active if hasattr(user, 'is_active') else True,
+                "is_banned": user.is_banned if hasattr(user, 'is_banned') else False,
+                "ban_reason": user.ban_reason if hasattr(user, 'ban_reason') else None,
+                "banned_at": user.banned_at if hasattr(user, 'banned_at') else None,
+                "banned_by": user.banned_by if hasattr(user, 'banned_by') else None
             })
 
         return {"users": user_data, "total": len(user_data)}
