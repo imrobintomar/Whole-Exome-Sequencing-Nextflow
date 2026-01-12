@@ -6,8 +6,10 @@ import { auth } from '../lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import AdminLogin from './AdminLogin';
 import AdminChatPanel from './AdminChatPanel';
+import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [jobs, setJobs] = useState<AdminJob[]>([]);
@@ -422,7 +424,12 @@ export default function AdminDashboard() {
                       <tr key={user.uid} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           <div>
-                            {user.email}
+                            <button
+                              onClick={() => router.push(`/admin/user/${user.uid}`)}
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {user.email}
+                            </button>
                             {user.is_banned && user.ban_reason && (
                               <div className="text-xs text-red-600 mt-1">Reason: {user.ban_reason}</div>
                             )}

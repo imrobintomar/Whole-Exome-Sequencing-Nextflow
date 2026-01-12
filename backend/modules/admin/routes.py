@@ -6,7 +6,7 @@ Admin-only endpoints for platform management
 from fastapi import APIRouter, Depends, HTTPException, Query
 from middleware.admin_guard import require_admin
 from database import SessionLocal, Job, User
-from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser
+from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent
 from services.metrics_service import MetricsService
 from services.audit_service import AuditService
 from sqlalchemy import func
@@ -617,5 +617,308 @@ async def activate_user(user_uid: str, admin=Depends(require_admin)):
         AuditService.log_action(admin.firebase_uid, "activate_user", {"user_uid": user_uid}, f"Activated user {user.email}")
 
         return {"success": True, "message": f"User {user.email} has been activated"}
+    finally:
+        db.close()
+
+
+@router.get("/users/{user_uid}/details")
+async def get_user_details(user_uid: str, admin=Depends(require_admin)):
+    """
+    Get comprehensive user details including:
+    - User profile and subscription
+    - Full job history
+    - Payment history (Stripe events)
+    - Support ticket history
+    - Activity timeline (audit logs)
+    - Notes and tags
+    """
+    db = SessionLocal()
+    try:
+        # Get user
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get subscription details
+        subscription = db.query(Subscription).filter(
+            Subscription.user_id == user_uid
+        ).first()
+
+        plan = None
+        if subscription:
+            plan = db.query(SubscriptionPlan).filter(
+                SubscriptionPlan.id == subscription.plan_id
+            ).first()
+
+        # Get usage tracking
+        current_month = int(datetime.now().strftime('%Y%m'))
+        usage = db.query(UsageTracking).filter(
+            UsageTracking.user_id == user_uid,
+            UsageTracking.month == current_month
+        ).first()
+
+        # Get all jobs
+        jobs = db.query(Job).filter(Job.user_id == user_uid).order_by(Job.created_at.desc()).all()
+
+        # Get payment history (webhook events for this customer)
+        payment_history = []
+        if subscription and subscription.stripe_customer_id:
+            webhooks = db.query(WebhookEvent).filter(
+                WebhookEvent.event_type.in_([
+                    'payment_intent.succeeded',
+                    'payment_intent.payment_failed',
+                    'invoice.paid',
+                    'invoice.payment_failed',
+                    'charge.succeeded',
+                    'charge.failed'
+                ])
+            ).order_by(WebhookEvent.created_at.desc()).limit(50).all()
+
+            # Filter webhooks for this customer (by checking payload)
+            for webhook in webhooks:
+                import json
+                try:
+                    payload = json.loads(webhook.payload_json)
+                    customer_id = None
+
+                    # Extract customer_id from different event types
+                    if 'data' in payload and 'object' in payload['data']:
+                        obj = payload['data']['object']
+                        customer_id = obj.get('customer')
+
+                    if customer_id == subscription.stripe_customer_id:
+                        payment_history.append({
+                            "id": webhook.id,
+                            "event_type": webhook.event_type,
+                            "created_at": webhook.created_at,
+                            "processed": webhook.processed,
+                            "amount": obj.get('amount', 0) / 100 if 'amount' in obj else None,
+                            "currency": obj.get('currency', 'usd')
+                        })
+                except:
+                    pass
+
+        # Get support tickets
+        conversations = db.query(ChatConversation).filter(
+            ChatConversation.user_id == user_uid
+        ).order_by(ChatConversation.created_at.desc()).all()
+
+        support_tickets = []
+        for conv in conversations:
+            message_count = db.query(ChatMessage).filter(
+                ChatMessage.conversation_id == conv.id
+            ).count()
+
+            support_tickets.append({
+                "id": conv.id,
+                "subject": conv.subject,
+                "status": conv.status,
+                "job_id": conv.job_id,
+                "message_count": message_count,
+                "last_message_at": conv.last_message_at,
+                "created_at": conv.created_at
+            })
+
+        # Get activity timeline (audit logs)
+        audit_logs = db.query(AuditLog).filter(
+            (AuditLog.user_id == user_uid) |
+            (AuditLog.resource_id == user_uid)
+        ).order_by(AuditLog.created_at.desc()).limit(100).all()
+
+        activity_timeline = [{
+            "id": log.id,
+            "action": log.action,
+            "resource_type": log.resource_type,
+            "resource_id": log.resource_id,
+            "created_at": log.created_at,
+            "metadata": log.metadata_json
+        } for log in audit_logs]
+
+        # Get notes
+        notes = db.query(UserNote).filter(
+            UserNote.user_id == user_uid
+        ).order_by(UserNote.created_at.desc()).all()
+
+        user_notes = [{
+            "id": note.id,
+            "note_text": note.note_text,
+            "admin_id": note.admin_id,
+            "created_at": note.created_at,
+            "updated_at": note.updated_at
+        } for note in notes]
+
+        # Get tags
+        tags = db.query(UserTag).filter(
+            UserTag.user_id == user_uid
+        ).all()
+
+        user_tags = [{
+            "id": tag.id,
+            "tag_name": tag.tag_name,
+            "color": tag.color,
+            "created_at": tag.created_at,
+            "created_by": tag.created_by
+        } for tag in tags]
+
+        # Compile response
+        return {
+            "user": {
+                "uid": user.firebase_uid,
+                "email": user.email,
+                "username": user.username,
+                "created_at": user.created_at,
+                "is_active": user.is_active if hasattr(user, 'is_active') else True,
+                "is_banned": user.is_banned if hasattr(user, 'is_banned') else False,
+                "ban_reason": user.ban_reason if hasattr(user, 'ban_reason') else None,
+                "banned_at": user.banned_at if hasattr(user, 'banned_at') else None,
+            },
+            "subscription": {
+                "plan": plan.name if plan else "Free",
+                "status": subscription.status if subscription else "none",
+                "stripe_customer_id": subscription.stripe_customer_id if subscription else None,
+                "current_period_start": subscription.current_period_start if subscription else None,
+                "current_period_end": subscription.current_period_end if subscription else None,
+                "price_cents": plan.price_cents if plan else 0,
+                "monthly_jobs_limit": plan.monthly_jobs_limit if plan else 2,
+            },
+            "usage": {
+                "jobs_executed": usage.jobs_executed if usage else 0,
+                "jobs_limit": usage.jobs_limit if usage else 2,
+                "month": usage.month if usage else current_month
+            },
+            "jobs": [{
+                "job_id": job.job_id,
+                "sample_name": job.sample_name,
+                "status": job.status,
+                "current_step": job.current_step,
+                "error_message": job.error_message,
+                "created_at": job.created_at,
+                "updated_at": job.updated_at,
+                "completed_at": job.completed_at if hasattr(job, 'completed_at') else None
+            } for job in jobs],
+            "payment_history": payment_history,
+            "support_tickets": support_tickets,
+            "activity_timeline": activity_timeline,
+            "notes": user_notes,
+            "tags": user_tags
+        }
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/notes")
+async def add_user_note(
+    user_uid: str,
+    note_text: str = Query(..., description="Note content"),
+    admin=Depends(require_admin)
+):
+    """Add a note to a user's profile"""
+    db = SessionLocal()
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Create note
+        note = UserNote(
+            user_id=user_uid,
+            admin_id=admin.firebase_uid,
+            note_text=note_text
+        )
+        db.add(note)
+        db.commit()
+        db.refresh(note)
+
+        AuditService(db).log_action(
+            action="add_user_note",
+            user_id=admin.firebase_uid,
+            resource_type="user",
+            resource_id=user_uid,
+            metadata={"note_preview": note_text[:50]}
+        )
+
+        return {
+            "success": True,
+            "note": {
+                "id": note.id,
+                "note_text": note.note_text,
+                "admin_id": note.admin_id,
+                "created_at": note.created_at
+            }
+        }
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/tags")
+async def add_user_tag(
+    user_uid: str,
+    tag_name: str = Query(..., description="Tag name"),
+    color: str = Query("blue", description="Tag color"),
+    admin=Depends(require_admin)
+):
+    """Add a tag to a user's profile"""
+    db = SessionLocal()
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Check if tag already exists
+        existing_tag = db.query(UserTag).filter(
+            UserTag.user_id == user_uid,
+            UserTag.tag_name == tag_name
+        ).first()
+
+        if existing_tag:
+            raise HTTPException(status_code=400, detail="Tag already exists for this user")
+
+        # Create tag
+        tag = UserTag(
+            user_id=user_uid,
+            tag_name=tag_name,
+            color=color,
+            created_by=admin.firebase_uid
+        )
+        db.add(tag)
+        db.commit()
+        db.refresh(tag)
+
+        return {
+            "success": True,
+            "tag": {
+                "id": tag.id,
+                "tag_name": tag.tag_name,
+                "color": tag.color,
+                "created_at": tag.created_at
+            }
+        }
+    finally:
+        db.close()
+
+
+@router.delete("/users/{user_uid}/tags/{tag_id}")
+async def remove_user_tag(
+    user_uid: str,
+    tag_id: int,
+    admin=Depends(require_admin)
+):
+    """Remove a tag from a user's profile"""
+    db = SessionLocal()
+    try:
+        tag = db.query(UserTag).filter(
+            UserTag.id == tag_id,
+            UserTag.user_id == user_uid
+        ).first()
+
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag not found")
+
+        db.delete(tag)
+        db.commit()
+
+        return {"success": True, "message": "Tag removed"}
     finally:
         db.close()

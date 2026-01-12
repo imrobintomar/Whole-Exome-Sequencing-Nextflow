@@ -160,3 +160,38 @@ Index('idx_conversations_user', ChatConversation.user_id)
 Index('idx_conversations_status', ChatConversation.status)
 Index('idx_messages_conversation', ChatMessage.conversation_id)
 Index('idx_messages_unread_admin', ChatMessage.read_by_admin, ChatMessage.sender_role)
+
+
+# ============================================================================
+# USER NOTES & TAGS
+# ============================================================================
+
+class UserNote(Base):
+    __tablename__ = 'user_notes'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(128), nullable=False)
+    admin_id = Column(String(128), nullable=False)
+    note_text = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_notes_user', 'user_id'),
+    )
+
+
+class UserTag(Base):
+    __tablename__ = 'user_tags'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String(128), nullable=False)
+    tag_name = Column(String(50), nullable=False)
+    color = Column(String(20), default='blue')  # blue, green, red, yellow, purple
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(String(128), nullable=False)
+
+    __table_args__ = (
+        Index('idx_tags_user', 'user_id'),
+        Index('idx_tags_name', 'tag_name'),
+    )

@@ -549,7 +549,113 @@ export const adminApi = {
     const response = await api.post<{ success: boolean; message: string }>(`/admin/users/${userUid}/activate`);
     return response.data;
   },
+
+  // User Details endpoints
+  getUserDetails: async (userUid: string) => {
+    const response = await api.get<UserDetailsResponse>(`/admin/users/${userUid}/details`);
+    return response.data;
+  },
+
+  addUserNote: async (userUid: string, noteText: string) => {
+    const response = await api.post<{ success: boolean; note: UserNote }>(`/admin/users/${userUid}/notes`, null, {
+      params: { note_text: noteText }
+    });
+    return response.data;
+  },
+
+  addUserTag: async (userUid: string, tagName: string, color: string = 'blue') => {
+    const response = await api.post<{ success: boolean; tag: UserTag }>(`/admin/users/${userUid}/tags`, null, {
+      params: { tag_name: tagName, color }
+    });
+    return response.data;
+  },
+
+  removeUserTag: async (userUid: string, tagId: number) => {
+    const response = await api.delete<{ success: boolean; message: string }>(`/admin/users/${userUid}/tags/${tagId}`);
+    return response.data;
+  },
 };
+
+// User Details interfaces
+export interface UserDetailsResponse {
+  user: {
+    uid: string;
+    email: string;
+    username: string;
+    created_at: string;
+    is_active: boolean;
+    is_banned: boolean;
+    ban_reason: string | null;
+    banned_at: string | null;
+  };
+  subscription: {
+    plan: string;
+    status: string;
+    stripe_customer_id: string | null;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    price_cents: number;
+    monthly_jobs_limit: number;
+  };
+  usage: {
+    jobs_executed: number;
+    jobs_limit: number;
+    month: number;
+  };
+  jobs: Array<{
+    job_id: string;
+    sample_name: string;
+    status: string;
+    current_step: string | null;
+    error_message: string | null;
+    created_at: string;
+    updated_at: string;
+    completed_at: string | null;
+  }>;
+  payment_history: Array<{
+    id: number;
+    event_type: string;
+    created_at: string;
+    processed: boolean;
+    amount: number | null;
+    currency: string;
+  }>;
+  support_tickets: Array<{
+    id: number;
+    subject: string;
+    status: string;
+    job_id: string | null;
+    message_count: number;
+    last_message_at: string;
+    created_at: string;
+  }>;
+  activity_timeline: Array<{
+    id: number;
+    action: string;
+    resource_type: string | null;
+    resource_id: string | null;
+    created_at: string;
+    metadata: string | null;
+  }>;
+  notes: UserNote[];
+  tags: UserTag[];
+}
+
+export interface UserNote {
+  id: number;
+  note_text: string;
+  admin_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserTag {
+  id: number;
+  tag_name: string;
+  color: string;
+  created_at: string;
+  created_by: string;
+}
 
 // SaaS Extension - Billing API
 export interface SubscriptionPlan {
