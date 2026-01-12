@@ -230,6 +230,17 @@ if [ -n "$NGROK_URL" ]; then
         echo "   Please create .env with: CORS_ORIGINS=$NGROK_URL"
     fi
     echo ""
+
+    # Update frontend .env.production
+    ENV_PROD_FILE="$PROJECT_DIR/frontend/.env.production"
+    if [ -f "$ENV_PROD_FILE" ]; then
+        echo "📝 Updating frontend production config..."
+        sed -i "s|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=$NGROK_URL|g" "$ENV_PROD_FILE"
+        echo "   ✅ Updated frontend/.env.production"
+        echo "   ⚠️  Remember to update Vercel and redeploy!"
+        echo "      Run: $BACKEND_DIR/update-vercel-backend-url.sh"
+    fi
+    echo ""
 fi
 
 # Step 7: Check status
@@ -269,6 +280,7 @@ echo "   Restart ngrok:        sudo systemctl restart atgcflow-ngrok.service"
 echo "   Stop all:             sudo systemctl stop atgcflow-backend.service atgcflow-ngrok.service"
 echo "   Get ngrok URL:        curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'"
 echo "   Or read from file:    cat $BACKEND_DIR/ngrok-url.txt"
+echo "   Update Vercel:        $BACKEND_DIR/update-vercel-backend-url.sh"
 echo ""
 echo "🔍 Web interfaces:"
 echo "   Backend API:      http://localhost:8000"
@@ -282,6 +294,11 @@ echo "   - ngrok URL is saved in: $BACKEND_DIR/ngrok-url.txt"
 echo "   - Free ngrok URLs change on restart (consider ngrok Pro for static domains)"
 echo "   - Both services auto-restart on failure and boot"
 echo "   - Check service health: curl http://localhost:8000/"
+echo ""
+echo "⚠️  IMPORTANT for https://atgcflow.com/:"
+echo "   Your production site needs the ngrok URL updated in Vercel!"
+echo "   Run: $BACKEND_DIR/update-vercel-backend-url.sh"
+echo "   Or manually update in Vercel Dashboard and redeploy"
 echo ""
 echo "✅ Your backend is now running 24/7 with public ngrok access!"
 echo ""

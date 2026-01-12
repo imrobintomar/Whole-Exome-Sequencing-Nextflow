@@ -13,14 +13,24 @@ const api = axios.create({
 
 // Add Firebase token to requests
 api.interceptors.request.use(async (config) => {
-  const user = auth.currentUser;
-  if (user) {
-    const token = await user.getIdToken();
-    config.headers.Authorization = `Bearer ${token}`;
+  try {
+    // Wait a bit for auth state to be ready after login
+    const user = auth.currentUser;
+
+    if (user) {
+      // Force refresh to ensure we have a valid token
+      const token = await user.getIdToken(true);
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (error) {
+    console.error('Error getting auth token:', error);
   }
+
   // Ensure ngrok header is always present
   config.headers['ngrok-skip-browser-warning'] = 'true';
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
 export interface User {
