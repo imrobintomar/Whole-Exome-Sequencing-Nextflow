@@ -121,6 +121,63 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleBanUser = async (userUid: string, email: string) => {
+    const reason = prompt(`Enter reason for banning ${email}:`);
+    if (!reason) return;
+
+    try {
+      await adminApi.banUser(userUid, reason);
+      alert(`User ${email} has been banned`);
+      const usersData = await adminApi.getAllUsers();
+      setUsers(usersData.users);
+    } catch (err: any) {
+      console.error('Error banning user:', err);
+      alert(`Failed to ban user: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const handleUnbanUser = async (userUid: string, email: string) => {
+    if (!confirm(`Unban user ${email}?`)) return;
+
+    try {
+      await adminApi.unbanUser(userUid);
+      alert(`User ${email} has been unbanned`);
+      const usersData = await adminApi.getAllUsers();
+      setUsers(usersData.users);
+    } catch (err: any) {
+      console.error('Error unbanning user:', err);
+      alert(`Failed to unban user: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const handleSuspendUser = async (userUid: string, email: string) => {
+    if (!confirm(`Suspend user ${email}? They will not be able to use the service until activated.`)) return;
+
+    try {
+      await adminApi.suspendUser(userUid);
+      alert(`User ${email} has been suspended`);
+      const usersData = await adminApi.getAllUsers();
+      setUsers(usersData.users);
+    } catch (err: any) {
+      console.error('Error suspending user:', err);
+      alert(`Failed to suspend user: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
+  const handleActivateUser = async (userUid: string, email: string) => {
+    if (!confirm(`Activate user ${email}?`)) return;
+
+    try {
+      await adminApi.activateUser(userUid);
+      alert(`User ${email} has been activated`);
+      const usersData = await adminApi.getAllUsers();
+      setUsers(usersData.users);
+    } catch (err: any) {
+      console.error('Error activating user:', err);
+      alert(`Failed to activate user: ${err.response?.data?.detail || err.message}`);
+    }
+  };
+
   const handleBulkAction = async (action: 'cancel' | 'delete') => {
     if (selectedJobs.length === 0) {
       alert('Please select jobs first');
@@ -351,75 +408,134 @@ export default function AdminDashboard() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Account Status</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {users.map((user) => (
-                    <tr key={user.uid} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {user.subscription?.plan || 'Free'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            user.subscription?.status === 'active'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {user.subscription?.status || 'none'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {user.usage ? `${user.usage.jobs_executed}/${user.usage.jobs_limit}` : '0/2'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(user.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex flex-col space-y-2">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'increase')}
-                              className="text-green-600 hover:text-green-900"
-                              title="Increase limit"
-                            >
-                              +
-                            </button>
-                            <button
-                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'decrease')}
-                              className="text-red-600 hover:text-red-900"
-                              title="Decrease limit"
-                            >
-                              -
-                            </button>
-                            <button
-                              onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'reset')}
-                              className="text-blue-600 hover:text-blue-900 text-xs"
-                              title="Reset usage count"
-                            >
-                              Reset
-                            </button>
+                  {users.map((user) => {
+                    const accountStatus = user.is_banned ? 'banned' : !user.is_active ? 'suspended' : 'active';
+                    return (
+                      <tr key={user.uid} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <div>
+                            {user.email}
+                            {user.is_banned && user.ban_reason && (
+                              <div className="text-xs text-red-600 mt-1">Reason: {user.ban_reason}</div>
+                            )}
                           </div>
-                          <select
-                            value={user.subscription?.plan || 'Free'}
-                            onChange={(e) => handleChangePlan(user.uid, e.target.value)}
-                            className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            title="Change subscription plan"
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {user.subscription?.plan || 'Free'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              user.subscription?.status === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
                           >
-                            <option value="Free">Free (2 jobs/mo)</option>
-                            <option value="Basic">Basic (10 jobs/mo, $29)</option>
-                            <option value="Pro">Pro (50 jobs/mo, $99)</option>
-                          </select>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {user.subscription?.status || 'none'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              accountStatus === 'active'
+                                ? 'bg-green-100 text-green-800'
+                                : accountStatus === 'banned'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }`}
+                          >
+                            {accountStatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {user.usage ? `${user.usage.jobs_executed}/${user.usage.jobs_limit}` : '0/2'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(user.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex flex-col space-y-2">
+                            {/* Usage Controls */}
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'increase')}
+                                className="text-green-600 hover:text-green-900"
+                                title="Increase limit"
+                              >
+                                +
+                              </button>
+                              <button
+                                onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'decrease')}
+                                className="text-red-600 hover:text-red-900"
+                                title="Decrease limit"
+                              >
+                                -
+                              </button>
+                              <button
+                                onClick={() => handleUpdateUsage(user.uid, user.usage?.jobs_limit || 2, 'reset')}
+                                className="text-blue-600 hover:text-blue-900 text-xs"
+                                title="Reset usage count"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            {/* Plan Selector */}
+                            <select
+                              value={user.subscription?.plan || 'Free'}
+                              onChange={(e) => handleChangePlan(user.uid, e.target.value)}
+                              className="px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                              title="Change subscription plan"
+                            >
+                              <option value="Free">Free (2 jobs/mo)</option>
+                              <option value="Basic">Basic (10 jobs/mo, $29)</option>
+                              <option value="Pro">Pro (50 jobs/mo, $99)</option>
+                            </select>
+                            {/* Ban/Suspend Controls */}
+                            <div className="flex flex-col space-y-1">
+                              {user.is_banned ? (
+                                <button
+                                  onClick={() => handleUnbanUser(user.uid, user.email)}
+                                  className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600"
+                                >
+                                  Unban
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleBanUser(user.uid, user.email)}
+                                  className="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+                                >
+                                  Ban
+                                </button>
+                              )}
+                              {!user.is_active ? (
+                                <button
+                                  onClick={() => handleActivateUser(user.uid, user.email)}
+                                  className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                                >
+                                  Activate
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleSuspendUser(user.uid, user.email)}
+                                  className="px-2 py-1 bg-yellow-500 text-white rounded text-xs hover:bg-yellow-600"
+                                >
+                                  Suspend
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

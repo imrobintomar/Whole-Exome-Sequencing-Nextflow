@@ -576,3 +576,41 @@ async def unban_user(user_uid: str, admin=Depends(require_admin)):
         return {"success": True, "message": f"User {user.email} has been unbanned"}
     finally:
         db.close()
+
+
+@router.post("/users/{user_uid}/suspend")
+async def suspend_user(user_uid: str, admin=Depends(require_admin)):
+    """Suspend a user account (set is_active to False)"""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_active = False
+        db.commit()
+
+        AuditService.log_action(admin.firebase_uid, "suspend_user", {"user_uid": user_uid}, f"Suspended user {user.email}")
+
+        return {"success": True, "message": f"User {user.email} has been suspended"}
+    finally:
+        db.close()
+
+
+@router.post("/users/{user_uid}/activate")
+async def activate_user(user_uid: str, admin=Depends(require_admin)):
+    """Activate a suspended user account (set is_active to True)"""
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user.is_active = True
+        db.commit()
+
+        AuditService.log_action(admin.firebase_uid, "activate_user", {"user_uid": user_uid}, f"Activated user {user.email}")
+
+        return {"success": True, "message": f"User {user.email} has been activated"}
+    finally:
+        db.close()

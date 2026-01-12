@@ -427,6 +427,11 @@ export interface AdminUser {
     jobs_executed: number;
     jobs_limit: number;
   } | null;
+  is_active?: boolean;
+  is_banned?: boolean;
+  ban_reason?: string;
+  banned_at?: string;
+  banned_by?: string;
 }
 
 export interface AdminJob extends Job {
@@ -520,6 +525,28 @@ export const adminApi = {
     }>(`/admin/users/${userUid}/subscription`, null, {
       params: { plan_name: planName }
     });
+    return response.data;
+  },
+
+  banUser: async (userUid: string, reason: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/users/${userUid}/ban`, null, {
+      params: { reason }
+    });
+    return response.data;
+  },
+
+  unbanUser: async (userUid: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/users/${userUid}/unban`);
+    return response.data;
+  },
+
+  suspendUser: async (userUid: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/users/${userUid}/suspend`);
+    return response.data;
+  },
+
+  activateUser: async (userUid: string) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/users/${userUid}/activate`);
     return response.data;
   },
 };
