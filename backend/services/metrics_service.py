@@ -27,18 +27,36 @@ class MetricsService:
                     "total_gb": round(memory.total / (1024**3), 2),
                     "used_gb": round(memory.used / (1024**3), 2),
                     "available_gb": round(memory.available / (1024**3), 2),
-                    "usage_percent": memory.percent
+                    "percent": memory.percent
                 },
                 "disk": {
                     "total_gb": round(disk.total / (1024**3), 2),
                     "used_gb": round(disk.used / (1024**3), 2),
                     "free_gb": round(disk.free / (1024**3), 2),
-                    "usage_percent": disk.percent
+                    "percent": disk.percent
                 }
             }
         except Exception as e:
             print(f"Error collecting metrics: {e}")
-            return None
+            # Return default values instead of None
+            return {
+                "cpu": {
+                    "usage_percent": 0,
+                    "count": 0
+                },
+                "memory": {
+                    "total_gb": 0,
+                    "used_gb": 0,
+                    "available_gb": 0,
+                    "percent": 0
+                },
+                "disk": {
+                    "total_gb": 0,
+                    "used_gb": 0,
+                    "free_gb": 0,
+                    "percent": 0
+                }
+            }
 
     @staticmethod
     def get_nextflow_processes():
