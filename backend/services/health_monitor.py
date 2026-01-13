@@ -2,6 +2,7 @@
 Health Monitoring Service - Tracks system health and generates alerts
 """
 import psutil
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Float, Text, desc
@@ -25,15 +26,18 @@ class HealthAlert(Base):
 class HealthMonitor:
     """Monitor system health and generate alerts"""
 
-    # Configurable thresholds
+    # Configurable thresholds - can be overridden by environment variables
     THRESHOLDS = {
         "cpu_warning": 70,
-        "cpu_critical": 90,
+        "cpu_critical": int(os.getenv("HEALTH_CPU_THRESHOLD", "90")),
         "memory_warning": 70,
-        "memory_critical": 90,
+        "memory_critical": int(os.getenv("HEALTH_MEMORY_THRESHOLD", "90")),
         "disk_warning": 80,
-        "disk_critical": 95,
+        "disk_critical": int(os.getenv("HEALTH_DISK_THRESHOLD", "90")),
     }
+
+    # Email notification settings
+    EMAIL_ALERTS_ENABLED = os.getenv("HEALTH_EMAIL_ALERTS_ENABLED", "true").lower() == "true"
 
     @staticmethod
     def check_system_health() -> Dict:
@@ -50,19 +54,28 @@ class HealthMonitor:
             memory = psutil.virtual_memory().percent
             disk = psutil.disk_usage('/').percent
 
+            # Prepare metrics for email alerts
+            current_metrics = {
+                "cpu": cpu,
+                "memory": memory,
+                "disk": disk
+            }
+
             # Check CPU
             if cpu >= HealthMonitor.THRESHOLDS["cpu_critical"]:
                 alert = HealthMonitor._create_alert(
                     db, "cpu", "critical",
                     f"CPU usage critically high at {cpu:.1f}%",
-                    cpu, HealthMonitor.THRESHOLDS["cpu_critical"]
+                    cpu, HealthMonitor.THRESHOLDS["cpu_critical"],
+                    current_metrics
                 )
                 alerts.append(alert)
             elif cpu >= HealthMonitor.THRESHOLDS["cpu_warning"]:
                 alert = HealthMonitor._create_alert(
                     db, "cpu", "warning",
                     f"CPU usage high at {cpu:.1f}%",
-                    cpu, HealthMonitor.THRESHOLDS["cpu_warning"]
+                    cpu, HealthMonitor.THRESHOLDS["cpu_warning"],
+                    current_metrics
                 )
                 alerts.append(alert)
 
@@ -71,14 +84,16 @@ class HealthMonitor:
                 alert = HealthMonitor._create_alert(
                     db, "memory", "critical",
                     f"Memory usage critically high at {memory:.1f}%",
-                    memory, HealthMonitor.THRESHOLDS["memory_critical"]
+                    memory, HealthMonitor.THRESHOLDS["memory_critical"],
+                    current_metrics
                 )
                 alerts.append(alert)
             elif memory >= HealthMonitor.THRESHOLDS["memory_warning"]:
                 alert = HealthMonitor._create_alert(
                     db, "memory", "warning",
                     f"Memory usage high at {memory:.1f}%",
-                    memory, HealthMonitor.THRESHOLDS["memory_warning"]
+                    memory, HealthMonitor.THRESHOLDS["memory_warning"],
+                    current_metrics
                 )
                 alerts.append(alert)
 
@@ -87,14 +102,16 @@ class HealthMonitor:
                 alert = HealthMonitor._create_alert(
                     db, "disk", "critical",
                     f"Disk usage critically high at {disk:.1f}%",
-                    disk, HealthMonitor.THRESHOLDS["disk_critical"]
+                    disk, HealthMonitor.THRESHOLDS["disk_critical"],
+                    current_metrics
                 )
                 alerts.append(alert)
             elif disk >= HealthMonitor.THRESHOLDS["disk_warning"]:
                 alert = HealthMonitor._create_alert(
                     db, "disk", "warning",
                     f"Disk usage high at {disk:.1f}%",
-                    disk, HealthMonitor.THRESHOLDS["disk_warning"]
+                    disk, HealthMonitor.THRESHOLDS["disk_warning"],
+                    current_metrics
                 )
                 alerts.append(alert)
 
@@ -120,7 +137,7 @@ class HealthMonitor:
             db.close()
 
     @staticmethod
-    def _create_alert(db, alert_type: str, severity: str, message: str, value: float, threshold: float) -> HealthAlert:
+    def _create_alert(db, alert_type: str, severity: str, message: str, value: float, threshold: float, metrics: Optional[Dict] = None) -> HealthAlert:
         """Create a new health alert if similar alert doesn't exist in last 30 minutes"""
         # Check if similar alert exists in last 30 minutes (avoid spam)
         recent_alert = db.query(HealthAlert).filter(
@@ -145,6 +162,22 @@ class HealthMonitor:
         db.refresh(alert)
 
         print(f"🚨 Health Alert: {severity.upper()} - {message}")
+
+        # Send email notification if enabled
+        if HealthMonitor.EMAIL_ALERTS_ENABLED:
+            try:
+                from services.email_service import get_email_service
+                email_service = get_email_service()
+                email_service.send_health_alert(
+                    alert_type=alert_type,
+                    severity=severity,
+                    message=message,
+                    value=value,
+                    threshold=threshold,
+                    metrics=metrics
+                )
+            except Exception as e:
+                print(f"⚠️ Failed to send email alert: {str(e)}")
 
         return alert
 

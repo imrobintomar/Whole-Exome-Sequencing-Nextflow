@@ -4,6 +4,7 @@ Tracks all sensitive operations for compliance
 """
 
 from database_extensions import AuditLog
+from database import SessionLocal
 import json
 from datetime import datetime
 
@@ -11,7 +12,28 @@ class AuditService:
     def __init__(self, db):
         self.db = db
 
-    def log_action(
+    @staticmethod
+    def log_action(user_id, action, metadata=None, description=None, resource_type=None, resource_id=None):
+        """
+        Static method to log an audit event without needing a database session
+        Creates its own session for convenience
+        """
+        db = SessionLocal()
+        try:
+            log = AuditLog(
+                user_id=user_id,
+                action=action,
+                resource_type=resource_type,
+                resource_id=resource_id,
+                metadata_json=json.dumps(metadata) if metadata else None
+            )
+            db.add(log)
+            db.commit()
+            return log
+        finally:
+            db.close()
+
+    def log_action_with_context(
         self,
         action: str,
         user_id: str = None,
@@ -22,7 +44,8 @@ class AuditService:
         metadata: dict = None
     ):
         """
-        Log an audit event
+        Instance method to log an audit event with full context
+        Use this when you have a database session available
 
         Example actions:
         - job_submit

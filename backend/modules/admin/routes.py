@@ -9,6 +9,8 @@ from database import SessionLocal, Job, User
 from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent, AuditLog
 from services.metrics_service import MetricsService
 from services.audit_service import AuditService
+from services.email_service import get_email_service
+from services.health_monitor import HealthMonitor
 from sqlalchemy import func
 from datetime import datetime, timedelta
 import os
@@ -920,5 +922,555 @@ async def remove_user_tag(
         db.commit()
 
         return {"success": True, "message": "Tag removed"}
+    finally:
+        db.close()
+
+
+# ============================================================================
+# EMAIL NOTIFICATION ENDPOINTS
+# ============================================================================
+
+@router.post("/email/test")
+async def test_email_connection(admin=Depends(require_admin)):
+    """
+    Test SMTP email connection
+    """
+    email_service = get_email_service()
+    result = email_service.test_connection()
+
+    AuditService.log_action(
+        admin.firebase_uid,
+        "test_email",
+        result,
+        "Tested email connection"
+    )
+
+    return result
+
+
+@router.post("/email/send-custom")
+async def send_custom_email(
+    user_email: str = Query(..., description="Recipient email"),
+    subject: str = Query(..., description="Email subject"),
+    message: str = Query(..., description="Email message"),
+    user_name: str = Query(None, description="Optional user name"),
+    admin=Depends(require_admin)
+):
+    """
+    Send custom notification email to a user
+    """
+    try:
+        email_service = get_email_service()
+        success = email_service.send_custom_notification(
+            user_email=user_email,
+            subject=subject,
+            message=message,
+            user_name=user_name
+        )
+
+        # Log the action
+        try:
+            AuditService.log_action(
+                admin.firebase_uid,
+                "send_custom_email",
+                {"user_email": user_email, "subject": subject, "success": success},
+                f"Sent custom email to {user_email}"
+            )
+        except Exception as audit_error:
+            print(f"⚠️ Failed to log audit: {audit_error}")
+
+        if success:
+            return {"success": True, "message": f"Email sent to {user_email}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email - check SMTP settings and recipient address")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ Error in send_custom_email: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+
+@router.post("/email/payment-reminder")
+async def send_payment_reminder(
+    user_uid: str = Query(..., description="User UID"),
+    amount: float = Query(..., description="Payment amount"),
+    due_date: str = Query(..., description="Payment due date"),
+    invoice_url: str = Query(None, description="Optional invoice URL"),
+    admin=Depends(require_admin)
+):
+    """
+    Send payment due reminder to a user
+    """
+    db = SessionLocal()
+    try:
+        # Get user details
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        email_service = get_email_service()
+        success = email_service.send_payment_due_alert(
+            user_email=user.email,
+            user_name=user.username or user.email.split('@')[0],
+            amount=amount,
+            due_date=due_date,
+            invoice_url=invoice_url
+        )
+
+        AuditService.log_action(
+            admin.firebase_uid,
+            "send_payment_reminder",
+            {"user_uid": user_uid, "amount": amount, "success": success},
+            f"Sent payment reminder to {user.email}"
+        )
+
+        if success:
+            return {"success": True, "message": f"Payment reminder sent to {user.email}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+    finally:
+        db.close()
+
+
+@router.post("/email/subscription-expiry")
+async def send_subscription_expiry(
+    user_uid: str = Query(..., description="User UID"),
+    admin=Depends(require_admin)
+):
+    """
+    Send subscription expiry notification to a user
+    """
+    db = SessionLocal()
+    try:
+        # Get user details
+        user = db.query(User).filter(User.firebase_uid == user_uid).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get subscription details
+        subscription = db.query(Subscription).filter(
+            Subscription.user_id == user_uid
+        ).first()
+
+        if not subscription:
+            raise HTTPException(status_code=404, detail="No active subscription found")
+
+        plan = db.query(SubscriptionPlan).filter(
+            SubscriptionPlan.id == subscription.plan_id
+        ).first()
+
+        email_service = get_email_service()
+        success = email_service.send_subscription_expiry_alert(
+            user_email=user.email,
+            user_name=user.username or user.email.split('@')[0],
+            expiry_date=subscription.current_period_end.strftime('%Y-%m-%d') if subscription.current_period_end else "Unknown",
+            plan_name=plan.name if plan else "Unknown"
+        )
+
+        AuditService.log_action(
+            admin.firebase_uid,
+            "send_subscription_expiry",
+            {"user_uid": user_uid, "success": success},
+            f"Sent subscription expiry notice to {user.email}"
+        )
+
+        if success:
+            return {"success": True, "message": f"Subscription expiry notice sent to {user.email}"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to send email")
+    finally:
+        db.close()
+
+
+@router.get("/email/health-alerts")
+async def get_health_alerts(
+    limit: int = Query(50, description="Max number of alerts"),
+    severity: str = Query(None, description="Filter by severity (warning/critical)"),
+    admin=Depends(require_admin)
+):
+    """
+    Get health alert history
+    """
+    alerts = HealthMonitor.get_alert_history(limit=limit, severity=severity)
+    return {
+        "alerts": alerts,
+        "count": len(alerts)
+    }
+
+
+@router.post("/email/health-alerts/{alert_id}/resolve")
+async def resolve_health_alert(
+    alert_id: int,
+    admin=Depends(require_admin)
+):
+    """
+    Mark a health alert as resolved
+    """
+    success = HealthMonitor.resolve_alert(alert_id)
+
+    if success:
+        AuditService.log_action(
+            admin.firebase_uid,
+            "resolve_health_alert",
+            {"alert_id": alert_id},
+            f"Resolved health alert #{alert_id}"
+        )
+        return {"success": True, "message": f"Alert #{alert_id} resolved"}
+    else:
+        raise HTTPException(status_code=404, detail="Alert not found")
+
+
+@router.post("/email/health-alerts/test")
+async def test_health_alert_email(admin=Depends(require_admin)):
+    """
+    Send a test health alert email
+    """
+    email_service = get_email_service()
+    success = email_service.send_health_alert(
+        alert_type="test",
+        severity="warning",
+        message="This is a test health alert email",
+        value=85.5,
+        threshold=80.0,
+        metrics={"cpu": 45.2, "memory": 62.8, "disk": 55.1}
+    )
+
+    AuditService.log_action(
+        admin.firebase_uid,
+        "test_health_alert_email",
+        {"success": success},
+        "Sent test health alert email"
+    )
+
+    if success:
+        return {"success": True, "message": "Test health alert email sent"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send test email")
+
+
+@router.get("/email/settings")
+async def get_email_settings(admin=Depends(require_admin)):
+    """
+    Get current email notification settings
+    """
+    return {
+        "smtp_host": os.getenv("SMTP_HOST", "smtp.hostinger.com"),
+        "smtp_port": int(os.getenv("SMTP_PORT", "465")),
+        "smtp_user": os.getenv("SMTP_USER", ""),
+        "admin_email": os.getenv("ADMIN_EMAIL", ""),
+        "health_alerts_enabled": os.getenv("HEALTH_EMAIL_ALERTS_ENABLED", "true").lower() == "true",
+        "health_thresholds": {
+            "cpu": int(os.getenv("HEALTH_CPU_THRESHOLD", "90")),
+            "memory": int(os.getenv("HEALTH_MEMORY_THRESHOLD", "90")),
+            "disk": int(os.getenv("HEALTH_DISK_THRESHOLD", "90"))
+        }
+    }
+
+
+# ============================================================================
+# ANALYTICS ENDPOINTS
+# ============================================================================
+
+@router.get("/analytics/summary")
+async def get_analytics_summary(
+    period: str = Query("month", description="Period: day, week, month, year"),
+    admin=Depends(require_admin)
+):
+    """
+    Get analytics summary for dashboard
+    """
+    db = SessionLocal()
+    try:
+        from datetime import datetime, timedelta
+
+        # Calculate date range based on period
+        now = datetime.utcnow()
+        if period == "day":
+            start_date = now - timedelta(days=1)
+        elif period == "week":
+            start_date = now - timedelta(weeks=1)
+        elif period == "year":
+            start_date = now - timedelta(days=365)
+        else:  # month
+            start_date = now - timedelta(days=30)
+
+        # User analytics
+        total_users = db.query(User).count()
+        new_users_period = db.query(User).filter(User.created_at >= start_date).count()
+
+        # Subscription analytics
+        active_subs = db.query(Subscription).filter(Subscription.status == 'active').count()
+
+        subscriptions = db.query(Subscription, SubscriptionPlan).join(
+            SubscriptionPlan
+        ).filter(Subscription.status == 'active').all()
+
+        mrr = sum(plan.price_cents for _, plan in subscriptions) / 100
+
+        # Job analytics
+        total_jobs = db.query(Job).count()
+        jobs_period = db.query(Job).filter(Job.created_at >= start_date).count()
+
+        completed_jobs = db.query(Job).filter(
+            Job.status == 'completed',
+            Job.created_at >= start_date
+        ).count()
+
+        failed_jobs = db.query(Job).filter(
+            Job.status == 'failed',
+            Job.created_at >= start_date
+        ).count()
+
+        success_rate = (completed_jobs / jobs_period * 100) if jobs_period > 0 else 0
+
+        return {
+            "users": {
+                "total": total_users,
+                "new_this_period": new_users_period,
+                "active_subscriptions": active_subs
+            },
+            "revenue": {
+                "mrr": mrr,
+                "total_subscriptions": active_subs
+            },
+            "jobs": {
+                "total": total_jobs,
+                "this_period": jobs_period,
+                "completed": completed_jobs,
+                "failed": failed_jobs,
+                "success_rate": success_rate
+            },
+            "period": period,
+            "start_date": start_date.isoformat(),
+            "end_date": now.isoformat()
+        }
+    finally:
+        db.close()
+
+
+@router.get("/analytics/revenue")
+async def get_revenue_analytics(
+    from_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
+    to_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    admin=Depends(require_admin)
+):
+    """
+    Get revenue analytics over time
+    """
+    db = SessionLocal()
+    try:
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+
+        # Parse dates or use defaults (last 12 months)
+        if from_date and to_date:
+            start = datetime.fromisoformat(from_date)
+            end = datetime.fromisoformat(to_date)
+        else:
+            end = datetime.utcnow()
+            start = end - timedelta(days=365)
+
+        # Get all subscriptions
+        subscriptions = db.query(Subscription, SubscriptionPlan).join(
+            SubscriptionPlan
+        ).filter(
+            Subscription.created_at >= start,
+            Subscription.created_at <= end
+        ).all()
+
+        # Group by month
+        monthly_revenue = defaultdict(float)
+        revenue_by_plan = defaultdict(float)
+
+        for sub, plan in subscriptions:
+            month_key = sub.created_at.strftime('%Y-%m')
+            monthly_revenue[month_key] += plan.price_cents / 100
+            revenue_by_plan[plan.name] += plan.price_cents / 100
+
+        # Format for frontend
+        revenue_over_time = [
+            {"month": month, "revenue": revenue}
+            for month, revenue in sorted(monthly_revenue.items())
+        ]
+
+        revenue_by_plan_data = [
+            {"plan": plan, "revenue": revenue}
+            for plan, revenue in revenue_by_plan.items()
+        ]
+
+        # Current MRR
+        active_subs = db.query(Subscription, SubscriptionPlan).join(
+            SubscriptionPlan
+        ).filter(Subscription.status == 'active').all()
+
+        current_mrr = sum(plan.price_cents for _, plan in active_subs) / 100
+
+        # Calculate ARPU (Average Revenue Per User)
+        total_users = db.query(User).count()
+        arpu = current_mrr / total_users if total_users > 0 else 0
+
+        return {
+            "revenue_over_time": revenue_over_time,
+            "revenue_by_plan": revenue_by_plan_data,
+            "current_mrr": current_mrr,
+            "arpu": arpu,
+            "total_revenue": sum(monthly_revenue.values()),
+            "from_date": start.isoformat(),
+            "to_date": end.isoformat()
+        }
+    finally:
+        db.close()
+
+
+@router.get("/analytics/users")
+async def get_user_analytics(
+    from_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
+    to_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    admin=Depends(require_admin)
+):
+    """
+    Get user growth analytics
+    """
+    db = SessionLocal()
+    try:
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+
+        # Parse dates or use defaults (last 12 months)
+        if from_date and to_date:
+            start = datetime.fromisoformat(from_date)
+            end = datetime.fromisoformat(to_date)
+        else:
+            end = datetime.utcnow()
+            start = end - timedelta(days=365)
+
+        # Get all users
+        users = db.query(User).filter(
+            User.created_at >= start,
+            User.created_at <= end
+        ).all()
+
+        # Group by month
+        monthly_users = defaultdict(int)
+        for user in users:
+            month_key = user.created_at.strftime('%Y-%m')
+            monthly_users[month_key] += 1
+
+        # Cumulative growth
+        user_growth = []
+        cumulative = 0
+        for month in sorted(monthly_users.keys()):
+            cumulative += monthly_users[month]
+            user_growth.append({
+                "month": month,
+                "new_users": monthly_users[month],
+                "total_users": cumulative
+            })
+
+        # Users by plan
+        users_by_plan = db.query(
+            SubscriptionPlan.name,
+            func.count(Subscription.id).label('count')
+        ).join(
+            Subscription, SubscriptionPlan.id == Subscription.plan_id
+        ).filter(
+            Subscription.status == 'active'
+        ).group_by(SubscriptionPlan.name).all()
+
+        free_users = db.query(User).count() - db.query(Subscription).filter(
+            Subscription.status == 'active'
+        ).count()
+
+        users_by_plan_data = [{"plan": name, "count": count} for name, count in users_by_plan]
+        users_by_plan_data.append({"plan": "Free", "count": free_users})
+
+        return {
+            "user_growth": user_growth,
+            "users_by_plan": users_by_plan_data,
+            "total_users": db.query(User).count(),
+            "from_date": start.isoformat(),
+            "to_date": end.isoformat()
+        }
+    finally:
+        db.close()
+
+
+@router.get("/analytics/jobs")
+async def get_job_analytics(
+    from_date: str = Query(None, description="Start date (YYYY-MM-DD)"),
+    to_date: str = Query(None, description="End date (YYYY-MM-DD)"),
+    admin=Depends(require_admin)
+):
+    """
+    Get job analytics
+    """
+    db = SessionLocal()
+    try:
+        from datetime import datetime, timedelta
+        from collections import defaultdict
+
+        # Parse dates or use defaults (last 30 days)
+        if from_date and to_date:
+            start = datetime.fromisoformat(from_date)
+            end = datetime.fromisoformat(to_date)
+        else:
+            end = datetime.utcnow()
+            start = end - timedelta(days=30)
+
+        # Get all jobs in period
+        jobs = db.query(Job).filter(
+            Job.created_at >= start,
+            Job.created_at <= end
+        ).all()
+
+        # Group by day and status
+        jobs_by_day = defaultdict(lambda: {"completed": 0, "failed": 0, "running": 0, "pending": 0})
+        jobs_by_status = defaultdict(int)
+
+        for job in jobs:
+            day_key = job.created_at.strftime('%Y-%m-%d')
+            jobs_by_day[day_key][job.status] += 1
+            jobs_by_status[job.status] += 1
+
+        # Format for frontend
+        jobs_over_time = [
+            {
+                "date": day,
+                "completed": data["completed"],
+                "failed": data["failed"],
+                "running": data["running"],
+                "pending": data["pending"]
+            }
+            for day, data in sorted(jobs_by_day.items())
+        ]
+
+        jobs_by_status_data = [
+            {"status": status, "count": count}
+            for status, count in jobs_by_status.items()
+        ]
+
+        # Calculate success rate
+        total_finished = jobs_by_status["completed"] + jobs_by_status["failed"]
+        success_rate = (jobs_by_status["completed"] / total_finished * 100) if total_finished > 0 else 0
+
+        # Calculate average job duration (if available)
+        completed_jobs = [j for j in jobs if j.status == 'completed' and hasattr(j, 'completed_at') and j.completed_at]
+        avg_duration = 0
+        if completed_jobs:
+            durations = [(j.completed_at - j.created_at).total_seconds() / 3600 for j in completed_jobs]
+            avg_duration = sum(durations) / len(durations)
+
+        return {
+            "jobs_over_time": jobs_over_time,
+            "jobs_by_status": jobs_by_status_data,
+            "success_rate": success_rate,
+            "avg_duration_hours": avg_duration,
+            "total_jobs": len(jobs),
+            "from_date": start.isoformat(),
+            "to_date": end.isoformat()
+        }
     finally:
         db.close()

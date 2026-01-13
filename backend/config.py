@@ -31,6 +31,20 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
     ADMIN_USER_UIDS: Optional[str] = ""
 
+    # Email Notifications - Optional
+    SMTP_HOST: Optional[str] = "smtp.hostinger.com"
+    SMTP_PORT: Optional[int] = 465
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    ADMIN_EMAIL: Optional[str] = "admin@atgcflow.com"
+    EMAIL_FROM_NAME: Optional[str] = "ATGC Flow"
+
+    # Health Alert Email Settings - Optional
+    HEALTH_EMAIL_ALERTS_ENABLED: Optional[str] = "true"
+    HEALTH_CPU_THRESHOLD: Optional[int] = 90
+    HEALTH_MEMORY_THRESHOLD: Optional[int] = 90
+    HEALTH_DISK_THRESHOLD: Optional[int] = 90
+
     class Config:
         env_file = ".env"
         case_sensitive = True

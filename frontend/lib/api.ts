@@ -574,6 +574,137 @@ export const adminApi = {
     const response = await api.delete<{ success: boolean; message: string }>(`/admin/users/${userUid}/tags/${tagId}`);
     return response.data;
   },
+
+  // Email Notification endpoints
+  testEmailConnection: async () => {
+    const response = await api.post<{ status: string; message: string; smtp_host: string; smtp_port: number; smtp_user: string; admin_email: string }>('/admin/email/test');
+    return response.data;
+  },
+
+  sendCustomEmail: async (userEmail: string, subject: string, message: string, userName?: string) => {
+    const response = await api.post<{ success: boolean; message: string }>('/admin/email/send-custom', null, {
+      params: { user_email: userEmail, subject, message, user_name: userName }
+    });
+    return response.data;
+  },
+
+  sendPaymentReminder: async (userUid: string, amount: number, dueDate: string, invoiceUrl?: string) => {
+    const response = await api.post<{ success: boolean; message: string }>('/admin/email/payment-reminder', null, {
+      params: { user_uid: userUid, amount, due_date: dueDate, invoice_url: invoiceUrl }
+    });
+    return response.data;
+  },
+
+  sendSubscriptionExpiry: async (userUid: string) => {
+    const response = await api.post<{ success: boolean; message: string }>('/admin/email/subscription-expiry', null, {
+      params: { user_uid: userUid }
+    });
+    return response.data;
+  },
+
+  getHealthAlerts: async (limit: number = 50, severity?: string) => {
+    const response = await api.get<{ alerts: any[]; count: number }>('/admin/email/health-alerts', {
+      params: { limit, severity }
+    });
+    return response.data;
+  },
+
+  resolveHealthAlert: async (alertId: number) => {
+    const response = await api.post<{ success: boolean; message: string }>(`/admin/email/health-alerts/${alertId}/resolve`);
+    return response.data;
+  },
+
+  sendTestHealthAlert: async () => {
+    const response = await api.post<{ success: boolean; message: string }>('/admin/email/health-alerts/test');
+    return response.data;
+  },
+
+  getEmailSettings: async () => {
+    const response = await api.get<{
+      smtp_host: string;
+      smtp_port: number;
+      smtp_user: string;
+      admin_email: string;
+      health_alerts_enabled: boolean;
+      health_thresholds: {
+        cpu: number;
+        memory: number;
+        disk: number;
+      };
+    }>('/admin/email/settings');
+    return response.data;
+  },
+
+  // Analytics endpoints
+  getAnalyticsSummary: async (period: 'day' | 'week' | 'month' | 'year' = 'month') => {
+    const response = await api.get<{
+      users: {
+        total: number;
+        new_this_period: number;
+        active_subscriptions: number;
+      };
+      revenue: {
+        mrr: number;
+        total_subscriptions: number;
+      };
+      jobs: {
+        total: number;
+        this_period: number;
+        completed: number;
+        failed: number;
+        success_rate: number;
+      };
+      period: string;
+      start_date: string;
+      end_date: string;
+    }>('/admin/analytics/summary', {
+      params: { period }
+    });
+    return response.data;
+  },
+
+  getRevenueAnalytics: async (fromDate?: string, toDate?: string) => {
+    const response = await api.get<{
+      revenue_over_time: Array<{ month: string; revenue: number }>;
+      revenue_by_plan: Array<{ plan: string; revenue: number }>;
+      current_mrr: number;
+      arpu: number;
+      total_revenue: number;
+      from_date: string;
+      to_date: string;
+    }>('/admin/analytics/revenue', {
+      params: { from_date: fromDate, to_date: toDate }
+    });
+    return response.data;
+  },
+
+  getUserAnalytics: async (fromDate?: string, toDate?: string) => {
+    const response = await api.get<{
+      user_growth: Array<{ month: string; new_users: number; total_users: number }>;
+      users_by_plan: Array<{ plan: string; count: number }>;
+      total_users: number;
+      from_date: string;
+      to_date: string;
+    }>('/admin/analytics/users', {
+      params: { from_date: fromDate, to_date: toDate }
+    });
+    return response.data;
+  },
+
+  getJobAnalytics: async (fromDate?: string, toDate?: string) => {
+    const response = await api.get<{
+      jobs_over_time: Array<{ date: string; completed: number; failed: number; running: number; pending: number }>;
+      jobs_by_status: Array<{ status: string; count: number }>;
+      success_rate: number;
+      avg_duration_hours: number;
+      total_jobs: number;
+      from_date: string;
+      to_date: string;
+    }>('/admin/analytics/jobs', {
+      params: { from_date: fromDate, to_date: toDate }
+    });
+    return response.data;
+  },
 };
 
 // User Details interfaces
