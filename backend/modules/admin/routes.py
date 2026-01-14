@@ -20,6 +20,11 @@ from typing import Optional
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
+# Request models
+class BulkJobActionRequest(BaseModel):
+    action: str
+    job_ids: list[str]
+
 @router.get("/dashboard/stats")
 async def get_dashboard_stats(admin=Depends(require_admin)):
     """
@@ -440,8 +445,7 @@ async def get_system_metrics(admin=Depends(require_admin)):
 
 @router.post("/jobs/bulk-action")
 async def bulk_job_action(
-    action: str,
-    job_ids: list[str],
+    request: BulkJobActionRequest,
     admin=Depends(require_admin)
 ):
     """
@@ -455,18 +459,18 @@ async def bulk_job_action(
             "failed": []
         }
 
-        for job_id in job_ids:
+        for job_id in request.job_ids:
             try:
                 job = db.query(Job).filter(Job.job_id == job_id).first()
                 if not job:
                     results["failed"].append({"job_id": job_id, "error": "Not found"})
                     continue
 
-                if action == "delete":
+                if request.action == "delete":
                     db.delete(job)
                     results["success"].append(job_id)
 
-                elif action == "cancel":
+                elif request.action == "cancel":
                     if job.status in [JobStatus.RUNNING, JobStatus.PENDING]:
                         job.status = JobStatus.FAILED  # Mark as failed since we don't have CANCELLED status
                         job.error_message = "Cancelled by admin"
@@ -474,7 +478,7 @@ async def bulk_job_action(
                     else:
                         results["failed"].append({"job_id": job_id, "error": f"Cannot cancel job with status: {job.status.value}"})
                 else:
-                    results["failed"].append({"job_id": job_id, "error": f"Unknown action: {action}"})
+                    results["failed"].append({"job_id": job_id, "error": f"Unknown action: {request.action}"})
 
             except Exception as e:
                 results["failed"].append({"job_id": job_id, "error": str(e)})
