@@ -1,112 +1,102 @@
 """
 Variant filtering module for post-annotation filtering with custom parameters.
 
-This module provides on-demand filtering of ANNOVAR-annotated variant files
-without re-running the expensive annotation pipeline.
+Provides deterministic, production-safe filtering of ANNOVAR-annotated variants
+without re-running annotation.
 """
 
 import pandas as pd
 from pandas import DataFrame
 from pydantic import BaseModel
-from typing import Optional
 
+
+# =========================
+# Configuration
+# =========================
 
 class FilterConfig(BaseModel):
-    """
-    Configuration for variant filtering parameters.
-
-    Users can customize these parameters to filter variants based on:
-    - Functional impact (exonic/splicing)
-    - Clinical significance (benign/pathogenic)
-    - Population frequency (gnomAD AF)
-    - Quality metrics (read depth, PASS filter)
-    """
-
     # Functional filters
     include_exonic: bool = True
     include_splicing: bool = True
     exclude_synonymous: bool = True
 
-    # Clinical significance filters
+    # Clinical filters
     exclude_benign: bool = True
     exclude_likely_benign: bool = True
 
-    # Population frequency filters
-    max_gnomad_af: float = 0.05
+    # Population frequency
+    max_gnomad_af: float = 0.01  # UI value ignored for range, kept for API compatibility
     gnomad_af_column: str = "gnomad40_exome_AF"
 
-    # Quality filters
-    min_depth: int = 5
+    # Quality
+    min_depth: int = 1
     require_pass: bool = False
 
-    # ACMG classification filters (optional)
+    # Reserved (future)
     include_pathogenic: bool = False
     include_likely_pathogenic: bool = False
     include_vus: bool = False
 
 
+# =========================
+# I/O
+# =========================
+
 def load_annotated_file(file_path: str) -> DataFrame:
-    """
-    Load ANNOVAR annotated file (tab-delimited Final_.txt).
-
-    CRITICAL: Uses keep_default_na=False to preserve dots (.) and empty strings
-    exactly as they appear in the original file. All values are kept as strings
-    to prevent any data loss or transformation.
-
-    Args:
-        file_path: Path to the tab-delimited annotated file
-
-    Returns:
-        DataFrame with all original values preserved
-    """
+    """Load tab-delimited ANNOVAR output with full fidelity."""
     return pd.read_csv(
         file_path,
-        sep='\t',  # Input is tab-delimited
-        keep_default_na=False,  # Don't convert '.' or '' to NaN
-        dtype=str,  # Keep all values as strings to prevent data loss
-        low_memory=False  # Handle large files
+        sep="\t",
+        keep_default_na=False,
+        dtype=str,
+        low_memory=False,
     )
 
 
 def save_filtered_csv(df: DataFrame, output_path: str) -> None:
-    """
-    Save filtered DataFrame as CSV (comma-delimited) matching sample_filter-file.csv format.
-
-    CRITICAL:
-    - Changes delimiter from tab to comma
-    - Preserves ALL data values exactly (dots, spaces, empty strings)
-    - Doesn't convert anything to NaN
-    - Quotes fields containing commas to prevent parsing issues
-
-    Args:
-        df: Filtered DataFrame to save
-        output_path: Path where CSV file will be written
-    """
+    """Save filtered variants as comma-delimited CSV."""
     df.to_csv(
         output_path,
         index=False,
-        sep=',',  # Output is comma-delimited
-        na_rep='',  # Keep empty values as empty strings
-        quoting=1  # Quote fields containing commas (csv.QUOTE_MINIMAL)
+        sep=",",
+        na_rep="",
+        quoting=1,  # csv.QUOTE_MINIMAL
     )
 
 
+# =========================
+# Normalization
+# =========================
+
+def normalize_columns(df: DataFrame) -> DataFrame:
+    """
+    Normalize selected annotation columns once to ensure safe comparisons.
+    """
+    cols = [
+        "Func.refGeneWithVer",
+        "ExonicFunc.refGene",
+        "ExonicFunc.refGeneWithVer",
+        "CLNSIG",
+        "FILTER",
+    ]
+
+    for col in cols:
+        if col in df.columns:
+            df[col] = df[col].str.strip().str.lower()
+
+    return df
+
+
+# =========================
+# Filtering Logic
+# =========================
+
 def apply_filters(df: DataFrame, config: FilterConfig) -> DataFrame:
     """
-    Apply all enabled filters sequentially to the variant DataFrame.
-
-    This function filters ROWS only - it never modifies data values.
-    All original values (dots, spaces, empty strings) are preserved.
-
-    Args:
-        df: DataFrame containing annotated variants
-        config: FilterConfig with user-specified filter parameters
-
-    Returns:
-        Filtered DataFrame with subset of rows matching filter criteria
+    Apply all filters sequentially.
     """
 
-    # Filter 1: Functional impact (exonic/splicing)
+    # ---------- 1. Functional region ----------
     if config.include_exonic or config.include_splicing:
         if "Func.refGeneWithVer" in df.columns:
             patterns = []
@@ -116,24 +106,24 @@ def apply_filters(df: DataFrame, config: FilterConfig) -> DataFrame:
                 patterns.append("splicing")
 
             if patterns:
-                pattern = "|".join(patterns)
-                df = df[df["Func.refGeneWithVer"].str.contains(pattern, case=False, na=False)]
+                df = df[
+                    df["Func.refGeneWithVer"].str.contains("|".join(patterns), na=False)
+                ]
 
-    # Filter 2: Exclude synonymous SNVs
+    # ---------- 2. Exclude synonymous SNVs ----------
     if config.exclude_synonymous:
-          exonic_col = None
-          if "ExonicFunc.refGene" in df.columns:
+        exonic_col = None
+        if "ExonicFunc.refGene" in df.columns:
             exonic_col = "ExonicFunc.refGene"
-          elif "ExonicFunc.refGeneWithVer" in df.columns:
+        elif "ExonicFunc.refGeneWithVer" in df.columns:
             exonic_col = "ExonicFunc.refGeneWithVer"
-          if exonic_col:
-           df = df[
-             ~df[exonic_col]
-             .str.strip()
-             .str.lower()
-             .isin({"synonymous snv"})
-        ]
-    # Filter 3: Exclude benign variants
+
+        if exonic_col:
+            df = df[
+                ~df[exonic_col].isin({"synonymous snv"})
+            ]
+
+    # ---------- 3. Exclude benign / likely benign ----------
     if config.exclude_benign or config.exclude_likely_benign:
         if "CLNSIG" in df.columns:
             patterns = []
@@ -143,82 +133,68 @@ def apply_filters(df: DataFrame, config: FilterConfig) -> DataFrame:
                 patterns.append("likely benign")
 
             if patterns:
-                pattern = "|".join(patterns)
-                # Create a mask for rows to exclude
-                mask = df["CLNSIG"].str.lower().str.contains(pattern, na=False)
+                mask = df["CLNSIG"].str.contains("|".join(patterns), na=False)
                 df = df[~mask]
 
-    # Filter 4: gnomAD allele frequency
+    # ---------- 4. Population frequency (0.00001 ≤ AF ≤ 0.1) ----------
     if config.gnomad_af_column in df.columns:
-        def filter_af(val):
-            """
-            Filter based on allele frequency.
-            Keep variants with AF < threshold.
-            Treat missing values (., nan, empty) as acceptable (keep them).
-            """
-            try:
-                af_value = float(str(val).strip())
-                return af_value < config.max_gnomad_af
-            except (ValueError, TypeError):
-                # If conversion fails, check if it's a missing value indicator
-                val_str = str(val).strip().lower()
-                return val_str in ["", ".", "nan", "0", "0.0"]
+        MIN_AF = 0.00001
+        MAX_AF = 0.1
 
-        df = df[df[config.gnomad_af_column].apply(filter_af)]
-
-    # Filter 5: Read depth (DP)
-    if 'DP' in df.columns:
-        # Convert DP to numeric, keeping original strings for non-numeric values
-        # Then filter based on numeric comparison
-        def filter_depth(val):
+        def af_pass(val: str) -> bool:
             try:
-                dp_value = float(str(val).strip())
-                return dp_value > config.min_depth
-            except (ValueError, TypeError):
-                # Keep rows with missing DP values
+                af = float(val)
+                return MIN_AF <= af <= MAX_AF
+            except Exception:
+                return val in {"", ".", "nan"}
+
+        df = df[df[config.gnomad_af_column].apply(af_pass)]
+
+    # ---------- 5. Read depth (DP ≥ max(1, user value)) ----------
+    if "DP" in df.columns:
+        effective_min_dp = max(1, config.min_depth)
+
+        def depth_pass(val: str) -> bool:
+            try:
+                return float(val) >= effective_min_dp
+            except Exception:
                 return True
 
-        df = df[df["DP"].apply(filter_depth)]
+        df = df[df["DP"].apply(depth_pass)]
 
-    # Filter 6: PASS-only variants
-    if config.require_pass and 'FILTER' in df.columns:
-        df = df[df["FILTER"] == "PASS"]
+    # ---------- 6. PASS-only ----------
+    if config.require_pass and "FILTER" in df.columns:
+        df = df[df["FILTER"] == "pass"]
 
     return df
 
 
+# =========================
+# Statistics
+# =========================
+
 def get_filter_statistics(original_df: DataFrame, filtered_df: DataFrame) -> dict:
-    """
-    Calculate statistics comparing original and filtered variant sets.
+    """Generate filtering summary statistics."""
+    total = len(original_df)
+    kept = len(filtered_df)
+    removed = total - kept
+    reduction = round((removed / total) * 100, 2) if total else 0
 
-    Args:
-        original_df: Original unfiltered DataFrame
-        filtered_df: Filtered DataFrame
-
-    Returns:
-        Dictionary with statistics about filtering results
-    """
-    total_variants = len(original_df)
-    filtered_variants = len(filtered_df)
-    reduction_percentage = ((total_variants - filtered_variants) / total_variants * 100) if total_variants > 0 else 0
-
-    # Get top genes in filtered set
     top_genes = []
     if "Gene.refGeneWithVer" in filtered_df.columns:
-        gene_counts = filtered_df["Gene.refGeneWithVer"].value_counts().head(10)
-        top_genes = [{"gene": gene, "count": int(count)} for gene, count in gene_counts.items()]
+        counts = filtered_df["Gene.refGeneWithVer"].value_counts().head(10)
+        top_genes = [{"gene": g, "count": int(c)} for g, c in counts.items()]
 
-    # Get functional distribution
     functional_distribution = {}
     if "Func.refGeneWithVer" in filtered_df.columns:
-        func_counts = filtered_df["Func.refGeneWithVer"].value_counts()
-        functional_distribution = {func: int(count) for func, count in func_counts.items()}
+        counts = filtered_df["Func.refGeneWithVer"].value_counts()
+        functional_distribution = {k: int(v) for k, v in counts.items()}
 
     return {
-        "total_variants": total_variants,
-        "filtered_variants": filtered_variants,
-        "removed_variants": total_variants - filtered_variants,
-        "reduction_percentage": round(reduction_percentage, 2),
+        "total_variants": total,
+        "filtered_variants": kept,
+        "removed_variants": removed,
+        "reduction_percentage": reduction,
         "top_genes": top_genes,
-        "functional_distribution": functional_distribution
+        "functional_distribution": functional_distribution,
     }
