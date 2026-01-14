@@ -1097,7 +1097,7 @@ function AnalyticsPanel() {
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={({ name, value }) => `${name}: $${value.toFixed(0)}`}
+                label={({ name, value }: { name: string; value: number }) => `${name}: $${value.toFixed(0)}`}
               >
                 {revenueData.revenue_by_plan.map((entry: any, index: number) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1120,7 +1120,7 @@ function AnalyticsPanel() {
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={({ name, value }) => `${name}: ${value}`}
+                label={({ name, value }: { name: string; value: number }) => `${name}: ${value}`}
               >
                 {userData.users_by_plan.map((entry: any, index: number) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -1191,7 +1191,7 @@ function AnalyticsPanel() {
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={({ name, value }) => `${name}: ${value}`}
+                label={({ name, value }: { name: string; value: number }) => `${name}: ${value}`}
               >
                 {jobData.jobs_by_status.map((entry: any, index: number) => {
                   const statusColors: any = {
