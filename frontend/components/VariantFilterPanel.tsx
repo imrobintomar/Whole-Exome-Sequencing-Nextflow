@@ -208,7 +208,7 @@ export function VariantFilterPanel({ jobId, onClassifyResults, onVisualizeResult
               onClick={() => toggleSection('functional')}
             >
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                📊 Functional Impact Filters
+                Functional Impact Filters
               </h3>
               {expandedSections.functional ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </div>
@@ -255,7 +255,7 @@ export function VariantFilterPanel({ jobId, onClassifyResults, onVisualizeResult
               onClick={() => toggleSection('clinical')}
             >
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                🏥 Clinical Significance Filters
+                Clinical Significance Filters
               </h3>
               {expandedSections.clinical ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </div>
@@ -292,7 +292,7 @@ export function VariantFilterPanel({ jobId, onClassifyResults, onVisualizeResult
               onClick={() => toggleSection('population')}
             >
               <h3 className="text-lg font-semibold flex items-center gap-2">
-                🧬 Population Frequency Filters
+                Population Frequency Filters
               </h3>
               {expandedSections.population ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </div>
