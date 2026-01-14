@@ -488,9 +488,9 @@ async def bulk_job_action(
         # Log the bulk action
         AuditService.log_action(
             admin.firebase_uid,
-            f"bulk_{action}",
-            {"job_ids": job_ids, "success": len(results["success"]), "failed": len(results["failed"])},
-            f"Bulk {action} on {len(job_ids)} jobs"
+            f"bulk_{request.action}",
+            {"job_ids": request.job_ids, "success": len(results["success"]), "failed": len(results["failed"])},
+            f"Bulk {request.action} on {len(request.job_ids)} jobs"
         )
 
         return results
