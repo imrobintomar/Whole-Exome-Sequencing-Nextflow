@@ -17,6 +17,7 @@ params.known_sites = [
     "/media/drprabudh/m1/vcf_file/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
 ]
 params.output_dir = "/media/drprabudh/m3/PRJNA855946"
+params.intervals = "/media/drprabudh/m1/Downloads/WES_Final_Agilent_V8_Hg38_1.bed"  // Default exome target regions
 params.help = false
 
 // Include processes
@@ -77,6 +78,7 @@ workflow {
             --input_dir         Input FASTQ directory (default: ${params.input_dir})
             --reference         Reference genome FASTA (default: ${params.reference})
             --output_dir        Output directory (default: ${params.output_dir})
+            --intervals         Exome target regions BED file (default: ${params.intervals})
             --help              Show this help message
 
         Resume Failed Pipeline:
