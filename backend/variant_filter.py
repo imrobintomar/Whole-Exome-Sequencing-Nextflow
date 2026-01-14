@@ -120,7 +120,7 @@ def apply_filters(df: DataFrame, config: FilterConfig) -> DataFrame:
 
         if exonic_col:
             df = df[
-                ~df[exonic_col].isin({"synonymous snv"})
+                ~df[exonic_col].isin({"synonymous SNV"})
             ]
 
     # ---------- 3. Exclude benign / likely benign ----------
