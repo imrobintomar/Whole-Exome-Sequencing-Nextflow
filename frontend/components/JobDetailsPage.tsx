@@ -31,6 +31,8 @@ import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import PipelineProgress from './PipelineProgress';
+import { VariantFilterPanel } from './VariantFilterPanel';
+import { ACMGResultsModal } from './ACMGResultsModal';
 
 interface JobDetailsPageProps {
   jobId: string;
@@ -54,6 +56,9 @@ export default function JobDetailsPage({
   const [error, setError] = useState('');
   const [downloadingFiles, setDownloadingFiles] = useState<Set<string>>(new Set());
   const [processing, setProcessing] = useState(false);
+  const [acmgResults, setAcmgResults] = useState<any>(null);
+  const [showACMGModal, setShowACMGModal] = useState(false);
+  const [filteredMetrics, setFilteredMetrics] = useState<any>(null);
 
   useEffect(() => {
     fetchJob();
@@ -334,9 +339,12 @@ export default function JobDetailsPage({
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="pipeline" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="pipeline">Pipeline Progress</TabsTrigger>
           <TabsTrigger value="files">Files & Downloads</TabsTrigger>
+          <TabsTrigger value="filtering" disabled={job?.status !== 'completed'}>
+            Variant Filtering
+          </TabsTrigger>
           <TabsTrigger value="analysis">Analysis Tools</TabsTrigger>
           <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
@@ -414,6 +422,23 @@ export default function JobDetailsPage({
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Variant Filtering Tab */}
+        <TabsContent value="filtering" className="space-y-4">
+          {job && (
+            <VariantFilterPanel
+              jobId={jobId}
+              onClassifyResults={(results) => {
+                setAcmgResults(results);
+                setShowACMGModal(true);
+              }}
+              onVisualizeResults={(metrics) => {
+                setFilteredMetrics(metrics);
+                // Optionally switch to a visualization view or update charts
+              }}
+            />
+          )}
         </TabsContent>
 
         {/* Analysis Tab */}
@@ -535,6 +560,13 @@ export default function JobDetailsPage({
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ACMG Results Modal */}
+      <ACMGResultsModal
+        open={showACMGModal}
+        onClose={() => setShowACMGModal(false)}
+        results={acmgResults}
+      />
     </div>
   );
 }

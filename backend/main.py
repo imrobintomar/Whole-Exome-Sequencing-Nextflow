@@ -23,8 +23,13 @@ from gene_panels import GenePanelManager
 from acmg_classifier import ACMGClassifier
 from constraint_data import get_constraint_db
 from variant_analyzer import VariantAnalyzer
+from variant_filter import FilterConfig, load_annotated_file, save_filtered_csv, apply_filters, get_filter_statistics
 import threading
 import pandas as pd
+import tempfile
+from datetime import datetime
+from fastapi.responses import StreamingResponse
+import io
 
 # Lifespan event handler
 @asynccontextmanager
@@ -902,6 +907,338 @@ async def get_variant_metrics(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+# ==================== Variant Filtering Endpoints ====================
+
+@app.post("/jobs/{job_id}/filter/preview")
+async def preview_filtered_variants(
+    job_id: str,
+    filter_config: FilterConfig,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply filters and return preview statistics without generating files.
+
+    Returns statistics about how many variants pass the filter criteria,
+    including gene distribution and functional impact breakdown.
+    """
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job not completed yet")
+
+    # Get analysis file
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
+        raise HTTPException(status_code=404, detail="Annotated file not found")
+
+    try:
+        # Load original annotated file
+        df_original = load_annotated_file(analysis_file)
+
+        # Apply filters
+        df_filtered = apply_filters(df_original, filter_config)
+
+        # Get statistics
+        stats = get_filter_statistics(df_original, df_filtered)
+
+        return {
+            "job_id": job_id,
+            "sample_name": job.sample_name,
+            "filter_config": filter_config.model_dump(),
+            "statistics": stats
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Filter preview failed: {str(e)}")
+
+
+@app.post("/jobs/{job_id}/filter/download")
+async def download_filtered_variants(
+    job_id: str,
+    filter_config: FilterConfig,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply filters and download filtered variants as CSV file.
+
+    CRITICAL:
+    - Loads tab-delimited Final_.txt file
+    - Applies row filters only (doesn't modify data values)
+    - Outputs comma-delimited CSV matching sample_filter-file.csv format
+    - Preserves all data values exactly (dots, spaces, empty strings)
+    """
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job not completed yet")
+
+    # Get analysis file
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
+        raise HTTPException(status_code=404, detail="Annotated file not found")
+
+    try:
+        # Load original annotated file (tab-delimited)
+        df_original = load_annotated_file(analysis_file)
+
+        # Apply filters
+        df_filtered = apply_filters(df_original, filter_config)
+
+        # Convert to CSV format (comma-delimited)
+        output = io.StringIO()
+        df_filtered.to_csv(
+            output,
+            index=False,
+            sep=',',  # Comma-delimited output
+            na_rep='',  # Preserve empty values
+            quoting=1  # Quote fields with commas
+        )
+        output.seek(0)
+
+        # Generate filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{job.sample_name}_filtered_{timestamp}.csv"
+
+        # Return as streaming response
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode('utf-8')),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename={filename}"}
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Filter download failed: {str(e)}")
+
+
+@app.post("/jobs/{job_id}/filter/classify")
+async def classify_filtered_variants(
+    job_id: str,
+    filter_config: FilterConfig,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply filters and run ACMG classification on filtered variants.
+
+    Returns classification summary and detailed results for each variant.
+    """
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job not completed yet")
+
+    # Get analysis file
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
+        raise HTTPException(status_code=404, detail="Annotated file not found")
+
+    try:
+        # Load and filter variants
+        df_original = load_annotated_file(analysis_file)
+        df_filtered = apply_filters(df_original, filter_config)
+
+        # Check if we have any variants after filtering
+        if len(df_filtered) == 0:
+            return {
+                "job_id": job_id,
+                "sample_name": job.sample_name,
+                "total_variants": 0,
+                "classifications": {
+                    "pathogenic": 0,
+                    "likely_pathogenic": 0,
+                    "vus": 0,
+                    "likely_benign": 0,
+                    "benign": 0
+                },
+                "variants": []
+            }
+
+        # Get constraint DB
+        constraint_db = get_constraint_db()
+
+        # Classify each variant
+        classifier = ACMGClassifier()
+        classified_variants = []
+
+        # Count classifications
+        classifications = {
+            "pathogenic": 0,
+            "likely_pathogenic": 0,
+            "vus": 0,
+            "likely_benign": 0,
+            "benign": 0
+        }
+
+        for idx, row in df_filtered.iterrows():
+            # Helper function to safely get values
+            def safe_get(column_name, default=""):
+                if column_name in df_filtered.columns:
+                    val = row[column_name]
+                    if pd.isna(val) or val == "" or val == ".":
+                        return default
+                    return str(val)
+                return default
+
+            def safe_float(column_name, default=0.0):
+                if column_name in df_filtered.columns:
+                    val = row[column_name]
+                    if pd.isna(val) or val == "" or val == ".":
+                        return default
+                    try:
+                        return float(val)
+                    except (ValueError, TypeError):
+                        return default
+                return default
+
+            # Map TSV columns to classifier input
+            variant = {
+                "consequence": safe_get("ExonicFunc.refGeneWithVer", ""),
+                "gene": safe_get("Gene.refGeneWithVer", ""),
+                "af_gnomad": safe_float("gnomad40_exome_AF", 0.0),
+                "cadd_phred": safe_float("CADD_phred", 0.0),
+                "revel_score": safe_float("REVEL_rankscore", 0.0),
+                "sift_pred": safe_get("SIFT_pred", ""),
+                "polyphen_pred": safe_get("Polyphen2_HDIV_pred", ""),
+                "clinvar_sig": safe_get("CLNSIG", ""),
+            }
+
+            # Add constraint data
+            gene = variant["gene"]
+            if gene and gene != ".":
+                constraint = constraint_db.get_gene_constraint(gene)
+                variant["pli"] = constraint.get("pli", 0)
+                variant["loeuf"] = constraint.get("loeuf", 1.0)
+
+            # Classify
+            result = classifier.classify_variant(variant)
+
+            # Get variant identifier
+            unique_id = safe_get('UniqueID', '')
+            if not unique_id:
+                chr_val = safe_get('Chr', safe_get('CHROM', ''))
+                start_val = safe_get('Start', safe_get('POS', ''))
+                ref_val = safe_get('Ref', safe_get('REF', ''))
+                alt_val = safe_get('Alt', safe_get('ALT', ''))
+                unique_id = f"{chr_val}:{start_val}:{ref_val}:{alt_val}"
+
+            # Add to results
+            classified_variant = {
+                "variant": unique_id,
+                "gene": variant["gene"],
+                "classification": result["classification"],
+                "score": result.get("score", 0),
+                "evidence": result["met_criteria"],
+            }
+            classified_variants.append(classified_variant)
+
+            # Update counts
+            classification = result["classification"].lower().replace(" ", "_")
+            if classification in classifications:
+                classifications[classification] += 1
+
+        return {
+            "job_id": job_id,
+            "sample_name": job.sample_name,
+            "total_variants": len(df_filtered),
+            "classifications": classifications,
+            "variants": classified_variants[:100]  # Return first 100 for preview
+        }
+
+    except Exception as e:
+        import traceback
+        error_detail = f"ACMG classification failed: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log to console for debugging
+        raise HTTPException(status_code=500, detail=f"ACMG classification failed: {str(e)}")
+
+
+@app.post("/jobs/{job_id}/filter/visualize")
+async def generate_filtered_visualizations(
+    job_id: str,
+    filter_config: FilterConfig,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply filters and generate visualization metrics for filtered variants.
+
+    Returns metrics in the same format as /variant-metrics endpoint.
+    """
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job not completed yet")
+
+    # Get analysis file
+    analysis_file = get_analysis_file(job)
+    if not analysis_file:
+        raise HTTPException(status_code=404, detail="Annotated file not found")
+
+    tmp_tsv_path = None
+    try:
+        # Load and filter variants
+        print(f"[Visualize] Loading annotated file: {analysis_file}")
+        df_original = load_annotated_file(analysis_file)
+        print(f"[Visualize] Loaded {len(df_original)} variants")
+
+        df_filtered = apply_filters(df_original, filter_config)
+        print(f"[Visualize] Filtered to {len(df_filtered)} variants")
+
+        # Check if we have any variants after filtering
+        if len(df_filtered) == 0:
+            return {
+                "job_id": job_id,
+                "sample_name": job.sample_name,
+                "filter_config": filter_config.model_dump(),
+                "total_variants_original": len(df_original),
+                "total_variants_filtered": 0,
+                "metrics": {}
+            }
+
+        # Save filtered variants to temp file for visualization
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.tsv', delete=False) as tmp_file:
+            tmp_tsv_path = tmp_file.name
+            # VariantAnalyzer expects tab-delimited input
+            df_filtered.to_csv(tmp_file, sep='\t', index=False)
+
+        # Generate metrics for filtered variants
+        analyzer = VariantAnalyzer(tmp_tsv_path)
+        metrics = analyzer.get_all_metrics()
+
+        return {
+            "job_id": job_id,
+            "sample_name": job.sample_name,
+            "filter_config": filter_config.model_dump(),
+            "total_variants_original": len(df_original),
+            "total_variants_filtered": len(df_filtered),
+            "metrics": metrics
+        }
+
+    except Exception as e:
+        import traceback
+        error_detail = f"Visualization generation failed: {str(e)}\n{traceback.format_exc()}"
+        print(error_detail)  # Log to console for debugging
+        raise HTTPException(status_code=500, detail=f"Visualization generation failed: {str(e)}")
+
+    finally:
+        # Clean up temp file
+        if tmp_tsv_path and os.path.exists(tmp_tsv_path):
+            try:
+                os.remove(tmp_tsv_path)
+            except:
+                pass  # Ignore cleanup errors
+
 
 if __name__ == "__main__":
     import uvicorn
