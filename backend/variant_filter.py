@@ -121,12 +121,18 @@ def apply_filters(df: DataFrame, config: FilterConfig) -> DataFrame:
 
     # Filter 2: Exclude synonymous SNVs
     if config.exclude_synonymous:
-        if "ExonicFunc.refGene" in df.columns:
-            df = df[~df["ExonicFunc.refGene"].str.contains("synonymous", case=False, na=False)]
-        elif "ExonicFunc.refGeneWithVer" in df.columns:
-            # Fallback to versioned column name
-            df = df[~df["ExonicFunc.refGeneWithVer"].str.contains("synonymous", case=False, na=False)]
-
+          exonic_col = None
+          if "ExonicFunc.refGene" in df.columns:
+            exonic_col = "ExonicFunc.refGene"
+          elif "ExonicFunc.refGeneWithVer" in df.columns:
+            exonic_col = "ExonicFunc.refGeneWithVer"
+          if exonic_col:
+           df = df[
+             ~df[exonic_col]
+             .str.strip()
+             .str.lower()
+             .isin({"synonymous snv"})
+        ]
     # Filter 3: Exclude benign variants
     if config.exclude_benign or config.exclude_likely_benign:
         if "CLNSIG" in df.columns:
