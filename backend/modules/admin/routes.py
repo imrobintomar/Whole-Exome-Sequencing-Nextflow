@@ -5,7 +5,7 @@ Admin-only endpoints for platform management
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from middleware.admin_guard import require_admin
-from database import SessionLocal, Job, User
+from database import SessionLocal, Job, User, JobStatus
 from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent, AuditLog
 from services.metrics_service import MetricsService
 from services.audit_service import AuditService
@@ -94,7 +94,13 @@ async def get_all_jobs(
 
         # Filter by status
         if status:
-            query = query.filter(Job.status == status)
+            # Convert string to enum
+            try:
+                status_enum = JobStatus(status.lower())
+                query = query.filter(Job.status == status_enum)
+            except ValueError:
+                # Invalid status, skip filter
+                pass
 
         # Filter by user
         if user_id:
@@ -460,12 +466,12 @@ async def bulk_job_action(
                     results["success"].append(job_id)
 
                 elif action == "cancel":
-                    if job.status in ["running", "pending"]:
-                        job.status = "cancelled"
+                    if job.status in [JobStatus.RUNNING, JobStatus.PENDING]:
+                        job.status = JobStatus.FAILED  # Mark as failed since we don't have CANCELLED status
                         job.error_message = "Cancelled by admin"
                         results["success"].append(job_id)
                     else:
-                        results["failed"].append({"job_id": job_id, "error": f"Cannot cancel job with status: {job.status}"})
+                        results["failed"].append({"job_id": job_id, "error": f"Cannot cancel job with status: {job.status.value}"})
                 else:
                     results["failed"].append({"job_id": job_id, "error": f"Unknown action: {action}"})
 
@@ -791,7 +797,7 @@ async def get_user_details(user_uid: str, admin=Depends(require_admin)):
             "jobs": [{
                 "job_id": job.job_id,
                 "sample_name": job.sample_name,
-                "status": job.status,
+                "status": job.status.value if hasattr(job.status, 'value') else str(job.status),
                 "current_step": job.current_step,
                 "error_message": job.error_message,
                 "created_at": job.created_at,
@@ -1432,8 +1438,9 @@ async def get_job_analytics(
 
         for job in jobs:
             day_key = job.created_at.strftime('%Y-%m-%d')
-            jobs_by_day[day_key][job.status] += 1
-            jobs_by_status[job.status] += 1
+            status_str = job.status.value if hasattr(job.status, 'value') else str(job.status)
+            jobs_by_day[day_key][status_str] += 1
+            jobs_by_status[status_str] += 1
 
         # Format for frontend
         jobs_over_time = [
@@ -1457,7 +1464,7 @@ async def get_job_analytics(
         success_rate = (jobs_by_status["completed"] / total_finished * 100) if total_finished > 0 else 0
 
         # Calculate average job duration (if available)
-        completed_jobs = [j for j in jobs if j.status == 'completed' and hasattr(j, 'completed_at') and j.completed_at]
+        completed_jobs = [j for j in jobs if (j.status.value if hasattr(j.status, 'value') else str(j.status)) == 'completed' and hasattr(j, 'completed_at') and j.completed_at]
         avg_duration = 0
         if completed_jobs:
             durations = [(j.completed_at - j.created_at).total_seconds() / 3600 for j in completed_jobs]
