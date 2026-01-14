@@ -4,6 +4,7 @@ Admin-only endpoints for platform management
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from middleware.admin_guard import require_admin
 from database import SessionLocal, Job, User, JobStatus
 from database_extensions import Subscription, SubscriptionPlan, UsageTracking, ChatConversation, AdminUser, UserNote, UserTag, ChatMessage, WebhookEvent, AuditLog
