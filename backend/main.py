@@ -52,19 +52,17 @@ try:
     app.include_router(admin_router)
     app.include_router(billing_router)
     app.include_router(chat_router)
-    print("✅ SaaS modules loaded successfully")
+    print("SaaS modules loaded successfully")
 except Exception as e:
-    print(f"⚠️  SaaS modules not available: {type(e).__name__}: {e}")
+    print(f"SaaS modules not available: {type(e).__name__}: {e}")
     import traceback
     traceback.print_exc()
 
-# Middleware to handle ngrok-skip-browser-warning
-@app.middleware("http")
-async def add_ngrok_headers(request, call_next):
-    response = await call_next(request)
-    # Add headers for ngrok compatibility
-    response.headers["ngrok-skip-browser-warning"] = "true"
-    return response
+# Custom middleware (if needed in future)
+# @app.middleware("http")
+# async def custom_middleware(request, call_next):
+#     response = await call_next(request)
+#     return response
 
 # CORS configuration - must be added AFTER custom middleware
 app.add_middleware(
@@ -101,10 +99,10 @@ def get_analysis_file(job: Job) -> str:
                 return job.annotated_vcf_path
 
             # Need to add UniqueID - create temp file with UniqueID added
-            print(f"⚠️  Job {job.job_id}: Using ANNOVAR file without UniqueID, adding it now...")
+            print(f"Job {job.job_id}: Using ANNOVAR file without UniqueID, adding it now...")
             return job.annotated_vcf_path  # For now, return as-is and handle in VariantAnalyzer
         except Exception as e:
-            print(f"⚠️  Error checking UniqueID column: {e}")
+            print(f"Error checking UniqueID column: {e}")
             return job.annotated_vcf_path
 
     return None
@@ -116,8 +114,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     This ensures CORS headers are added even when endpoints fail
     """
     # Log the full exception for debugging
-    print(f"❌ Unhandled exception in {request.method} {request.url.path}:")
-    print(f"   Error: {type(exc).__name__}: {str(exc)}")
+    print(f"Unhandled exception in {request.method} {request.url.path}:")
+    print(f"Error: {type(exc).__name__}: {str(exc)}")
     traceback.print_exc()
 
     # Determine status code

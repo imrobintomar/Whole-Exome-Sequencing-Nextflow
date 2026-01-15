@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "sqlite:///./wes_pipeline.db"
 
-    # CORS - Support multiple origins for ngrok and Vercel
+    # CORS - Support multiple origins for local dev and production (Vercel)
     CORS_ORIGINS: str = "http://localhost:3000"
 
     # SaaS Extension - Optional (graceful degradation if not set)

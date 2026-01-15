@@ -1,31 +1,22 @@
 #!/bin/bash
-# Auto-update Vercel environment variable with current ngrok URL
+# Update Vercel environment variable with production API URL
 
 set -e
 
 BACKEND_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$BACKEND_DIR")"
+PRODUCTION_API="https://api.atgcflow.com"
 
-echo "🔄 Updating Vercel with ngrok URL"
-echo "=================================="
+echo "🔄 Updating Vercel with Production API URL"
+echo "==========================================="
 echo ""
-
-# Get current ngrok URL
-NGROK_URL=$(curl -s http://localhost:4040/api/tunnels 2>/dev/null | grep -o '"public_url":"https://[^"]*' | grep -o 'https://[^"]*' | head -1)
-
-if [ -z "$NGROK_URL" ]; then
-    echo "❌ Could not retrieve ngrok URL"
-    echo "   Is ngrok running? Check: sudo systemctl status atgcflow-ngrok.service"
-    exit 1
-fi
-
-echo "✅ Current ngrok URL: $NGROK_URL"
+echo "✅ Production API URL: $PRODUCTION_API"
 echo ""
 
 # Update local .env.production file
 ENV_PROD_FILE="$PROJECT_DIR/frontend/.env.production"
 if [ -f "$ENV_PROD_FILE" ]; then
-    sed -i "s|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=$NGROK_URL|g" "$ENV_PROD_FILE"
+    sed -i "s|^NEXT_PUBLIC_API_URL=.*|NEXT_PUBLIC_API_URL=$PRODUCTION_API|g" "$ENV_PROD_FILE"
     echo "✅ Updated $ENV_PROD_FILE"
 else
     echo "⚠️  Frontend .env.production not found"
@@ -57,7 +48,7 @@ cd "$PROJECT_DIR/frontend" || exit 1
 vercel env rm NEXT_PUBLIC_API_URL production --yes 2>/dev/null || true
 
 # Add new variable
-echo "$NGROK_URL" | vercel env add NEXT_PUBLIC_API_URL production
+echo "$PRODUCTION_API" | vercel env add NEXT_PUBLIC_API_URL production
 
 echo ""
 echo "✅ Vercel environment variable updated"
@@ -83,11 +74,11 @@ echo "🎉 Update Complete!"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 echo "📊 Current Configuration:"
-echo "   ngrok URL:        $NGROK_URL"
+echo "   Production API:   $PRODUCTION_API"
 echo "   Frontend (prod):  https://atgcflow.com/"
 echo ""
 echo "💡 Tips:"
-echo "   - Free ngrok URLs change on restart"
-echo "   - Run this script after ngrok restarts"
-echo "   - Consider ngrok Pro for static domains"
+echo "   - Production API is served via Cloudflare Tunnel"
+echo "   - API URL is stable and doesn't change on restart"
+echo "   - Cloudflare provides automatic HTTPS and DDoS protection"
 echo ""

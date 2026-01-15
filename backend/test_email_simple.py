@@ -21,32 +21,32 @@ def main():
     print("-" * 70)
     success1 = email_service.send_custom_notification(
         user_email="robin.tomar@atgcflow.com",
-        subject="✅ Test Email - Same Server",
+        subject="Test Email - Same Server",
         message="This is a test email sent to the same Hostinger email server.",
         user_name="Robin"
     )
 
     if success1:
-        print("✅ Email sent successfully!")
-        print("📧 Check robin.tomar@atgcflow.com inbox")
+        print("Email sent successfully!")
+        print("Check robin.tomar@atgcflow.com inbox")
     else:
-        print("❌ Failed to send email")
+        print(" Failed to send email")
 
     # Test 2: Send to admin email
     print("\n2. Testing email to admin@atgcflow.com...")
     print("-" * 70)
     success2 = email_service.send_custom_notification(
         user_email="admin@atgcflow.com",
-        subject="✅ Test Email - Admin",
+        subject=" Test Email - Admin",
         message="This is a test email sent to the admin email address.",
         user_name="Admin"
     )
 
     if success2:
-        print("✅ Email sent successfully!")
-        print("📧 Check admin@atgcflow.com inbox")
+        print("Email sent successfully!")
+        print("Check admin@atgcflow.com inbox")
     else:
-        print("❌ Failed to send email")
+        print("Failed to send email")
 
     print("\n" + "=" * 70)
     print("TEST COMPLETE")

@@ -24,6 +24,8 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          light: "hsl(var(--primary-light))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -40,6 +42,8 @@ module.exports = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          cyan: "hsl(var(--accent-cyan))",
+          teal: "hsl(var(--accent-teal))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -48,6 +52,19 @@ module.exports = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Direct color values for easier use
+        purple: {
+          primary: '#10065e',
+          light: '#1e1b4b',
+          dark: '#0a0438',
+        },
+        cyan: {
+          DEFAULT: '#06b6d4',
+          light: '#22d3ee',
+        },
+        teal: {
+          DEFAULT: '#14b8a6',
         },
       },
       borderRadius: {

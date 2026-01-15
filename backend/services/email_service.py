@@ -78,11 +78,11 @@ class EmailService:
             server.sendmail(self.from_email, to_emails, message.as_string())
             server.quit()
 
-            print(f"✅ Email sent successfully to {', '.join(to_emails)}")
+            print(f" Email sent successfully to {', '.join(to_emails)}")
             return True
 
         except Exception as e:
-            print(f"❌ Failed to send email: {str(e)}")
+            print(f" Failed to send email: {str(e)}")
             return False
 
     def send_health_alert(
@@ -108,7 +108,7 @@ class EmailService:
         Returns:
             bool: True if email sent successfully
         """
-        subject = f"🚨 {severity.upper()} System Alert: {alert_type.upper()}"
+        subject = f" {severity.upper()} System Alert: {alert_type.upper()}"
 
         # Create HTML email body
         html_body = f"""
@@ -190,7 +190,7 @@ class EmailService:
                     </p>
                 </div>
                 <div class="footer">
-                    <p>This is an automated alert from ATGC Flow Health Monitoring System</p>
+                    <p>This is an automated alert from ATGCFlow Health Monitoring System</p>
                     <p>&copy; 2026 ATGC Flow. All rights reserved.</p>
                 </div>
             </div>
@@ -212,7 +212,7 @@ class EmailService:
         Please check the admin dashboard for more details.
 
         ---
-        ATGC Flow - Whole Exome Sequencing Platform
+        ATGCFlow - Whole Exome Sequencing Platform
         """
 
         return self._send_email([self.admin_email], subject, html_body, text_body)
@@ -238,7 +238,7 @@ class EmailService:
         Returns:
             bool: True if email sent successfully
         """
-        subject = f"Payment Due Reminder - ATGC Flow"
+        subject = f"Payment Due Reminder - ATGCFlow"
 
         html_body = f"""
         <!DOCTYPE html>
@@ -311,7 +311,7 @@ class EmailService:
 
         {"View Invoice: " + invoice_url if invoice_url else ""}
 
-        Thank you for using ATGC Flow!
+        Thank you for using ATGCFlow!
 
         ---
         ATGC Flow - Whole Exome Sequencing Platform

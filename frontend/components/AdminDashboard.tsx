@@ -283,7 +283,7 @@ export default function AdminDashboard() {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-gray-600 mt-1">Platform management and monitoring</p>
+              <p className="text-gray-600 mt-1">ATGCFLOW</p>
             </div>
             <button
               onClick={handleLogout}
@@ -1345,13 +1345,13 @@ function EmailAlertsPanel() {
       );
       setMessage({
         type: 'success',
-        text: `✅ Email sent successfully to ${customEmail.userEmail}! Check their inbox (and spam folder).`
+        text: ` Email sent successfully to ${customEmail.userEmail}! Check their inbox (and spam folder).`
       });
       setCustomEmail({ userEmail: '', subject: '', message: '', userName: '' });
     } catch (error: any) {
       console.error('Email send error:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to send email';
-      setMessage({ type: 'error', text: `❌ ${errorMsg}` });
+      setMessage({ type: 'error', text: ` ${errorMsg}` });
     } finally {
       setSendingEmail(false);
     }
@@ -1370,13 +1370,13 @@ function EmailAlertsPanel() {
       );
       setMessage({
         type: 'success',
-        text: `✅ Payment reminder sent successfully! Amount: $${paymentReminder.amount}, Due: ${paymentReminder.dueDate}`
+        text: ` Payment reminder sent successfully! Amount: $${paymentReminder.amount}, Due: ${paymentReminder.dueDate}`
       });
       setPaymentReminder({ userUid: '', amount: '', dueDate: '', invoiceUrl: '' });
     } catch (error: any) {
       console.error('Payment reminder error:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to send payment reminder';
-      setMessage({ type: 'error', text: `❌ ${errorMsg}` });
+      setMessage({ type: 'error', text: ` ${errorMsg}` });
     } finally {
       setSendingEmail(false);
     }

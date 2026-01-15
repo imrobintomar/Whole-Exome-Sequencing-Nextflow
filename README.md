@@ -28,8 +28,8 @@
 - 💬 **Live Chat**: Support system integration (optional)
 
 ### DevOps & Infrastructure
-- 🚀 **24/7 Deployment**: Systemd service management
-- 🌐 **ngrok Tunneling**: Public URL for local development
+- 🚀 **24/7 Deployment**: Systemd service management with Cloudflare Tunnel
+- 🌐 **Production Ready**: Cloudflare-secured API (https://api.atgcflow.com/)
 - 🐳 **Containerization Ready**: Docker/Singularity support
 - 📈 **Dynamic Resources**: Auto-scaling based on system capacity
 - 🔄 **Pipeline Control**: Cancel, resume, rerun capabilities
@@ -77,7 +77,7 @@ Final TSV Output (Chr:Start:Ref:Alt annotated variants)
 | **Database** | SQLite / PostgreSQL | Job tracking & user data |
 | **Auth** | Firebase Admin SDK | Authentication & authorization |
 | **Payments** | Stripe API | Subscription billing |
-| **Tunneling** | ngrok | Public URL for local dev |
+| **Tunneling** | Cloudflare Tunnel | Secure public API access |
 | **Styling** | Tailwind CSS + Shadcn UI | Component library |
 | **Visualization** | Recharts + IGV.js | Charts & genome browser |
 
@@ -180,7 +180,7 @@ npm run dev
 # Visit: http://localhost:3000
 ```
 
-#### Option 2: Production Mode (24/7 with ngrok)
+#### Option 2: Production Mode (24/7 with Cloudflare Tunnel)
 
 ```bash
 # One-command setup
@@ -189,13 +189,14 @@ cd backend
 
 # This will:
 # ✅ Start backend as systemd service
-# ✅ Start ngrok tunnel with public URL
 # ✅ Enable auto-start on boot
 # ✅ Enable auto-restart on failure
 
+# Production API is accessible at:
+# https://api.atgcflow.com/
+
 # Manage services
 ./manage-services.sh status    # Check status
-./manage-services.sh url       # Get public URL
 ./manage-services.sh logs all  # View logs
 ./manage-services.sh restart   # Restart services
 ```
@@ -300,7 +301,7 @@ ADMIN_USER_UIDS=uid1,uid2,uid3
 ```bash
 # API
 NEXT_PUBLIC_API_URL=http://localhost:8000
-# For production: https://your-ngrok-url.ngrok-free.dev
+# For production: https://api.atgcflow.com/
 
 # Firebase
 NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
@@ -311,22 +312,24 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
 NEXT_PUBLIC_FIREBASE_APP_ID=1:123456789:web:abcdef
 ```
 
-### 4. ngrok Configuration (ngrok.yml)
+### 4. Cloudflare Tunnel Configuration (Optional for custom domains)
 
-```yaml
-version: "2"
-authtoken: YOUR_NGROK_AUTHTOKEN_HERE
+If you want to set up your own Cloudflare Tunnel:
 
-tunnels:
-  wes-backend:
-    proto: http
-    addr: 8000
-    schemes:
-      - https
-    inspect: true
+```bash
+# Install cloudflared
+wget https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+sudo dpkg -i cloudflared-linux-amd64.deb
+
+# Authenticate with Cloudflare
+cloudflared tunnel login
+
+# Create a tunnel
+cloudflared tunnel create wes-backend
+
+# Configure tunnel to point to localhost:8000
+# See Cloudflare Tunnel documentation for details
 ```
-
-Get your authtoken from: https://dashboard.ngrok.com/get-started/your-authtoken
 
 ---
 
@@ -679,25 +682,21 @@ nextflow run main.nf -profile aggressive
 ### Using manage-services.sh (Recommended)
 
 ```bash
-# Check status of all services
+# Check status of backend service
 ./backend/manage-services.sh status
 
-# Start all services (backend + ngrok)
+# Start backend service
 ./backend/manage-services.sh start
 
-# Stop all services
+# Stop backend service
 ./backend/manage-services.sh stop
 
-# Restart all services
+# Restart backend service
 ./backend/manage-services.sh restart
 
 # View logs
-./backend/manage-services.sh logs backend    # Backend only
-./backend/manage-services.sh logs ngrok      # ngrok only
-./backend/manage-services.sh logs all        # Both together
-
-# Get public ngrok URL
-./backend/manage-services.sh url
+./backend/manage-services.sh logs backend    # Backend logs
+./backend/manage-services.sh logs all        # All logs
 
 # Enable/disable auto-start on boot
 ./backend/manage-services.sh enable
@@ -713,15 +712,8 @@ sudo systemctl start atgcflow-backend.service
 sudo systemctl stop atgcflow-backend.service
 sudo systemctl restart atgcflow-backend.service
 
-# ngrok service
-sudo systemctl status atgcflow-ngrok.service
-sudo systemctl start atgcflow-ngrok.service
-sudo systemctl stop atgcflow-ngrok.service
-sudo systemctl restart atgcflow-ngrok.service
-
 # View logs
 sudo journalctl -u atgcflow-backend.service -f
-sudo journalctl -u atgcflow-ngrok.service -f
 ```
 
 ---
@@ -810,16 +802,16 @@ params.snpsift_jar = '/actual/path/to/SnpSift.jar'
 tail -f backend/logs/backend.log
 ```
 
-**ngrok tunnel fails:**
+**Backend connection issues:**
 ```bash
-# Check authentication
-ngrok config check
+# Check backend service status
+sudo systemctl status atgcflow-backend.service
 
-# Add token if needed
-ngrok config add-authtoken YOUR_TOKEN
+# View backend logs
+./backend/manage-services.sh logs backend
 
-# View ngrok logs
-./backend/manage-services.sh logs ngrok
+# Restart backend
+./backend/manage-services.sh restart
 ```
 
 **Database errors:**
@@ -903,7 +895,6 @@ tar -czf old_results.tar.gz results/
 
 ## 📚 Documentation
 
-- **[NGROK-SETUP-GUIDE.md](NGROK-SETUP-GUIDE.md)** - ngrok tunneling setup
 - **[backend/SECURITY-PATCH.md](backend/SECURITY-PATCH.md)** - Security hardening
 - **[backend/UPGRADE-NOTES.md](backend/UPGRADE-NOTES.md)** - Migration guide
 - **[QUICK-START-24-7.md](QUICK-START-24-7.md)** - 24/7 deployment guide
