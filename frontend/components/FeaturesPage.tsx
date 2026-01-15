@@ -16,11 +16,12 @@ import {
   Activity,
   ArrowRight,
   CheckCircle2,
-  Play
+  Play,
+  LucideIcon
 } from 'lucide-react';
 
 interface FeatureDetailProps {
-  icon: any;
+  icon: LucideIcon;
   title: string;
   description: string;
   features: string[];

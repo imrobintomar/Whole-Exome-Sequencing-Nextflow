@@ -4,7 +4,21 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Users, Microscope, Building2, Clock, CheckCircle2 } from 'lucide-react';
+import { Mail, Users, Microscope, Building2, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+
+interface FormErrors {
+  name?: string;
+  email?: string;
+  message?: string;
+}
+
+// Email configuration - can be moved to environment variables
+const CONTACT_EMAILS = {
+  general: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'aiimsgenomics@gmail.com',
+  support: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'aiimsgenomics@gmail.com',
+  collaboration: process.env.NEXT_PUBLIC_COLLABORATION_EMAIL || 'drprabudhgoel@gmail.com',
+  access: process.env.NEXT_PUBLIC_ACCESS_EMAIL || 'aiimsgenomics@gmail.com'
+};
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -14,12 +28,72 @@ export default function ContactPage() {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<{ [key: string]: boolean }>({});
+
+  // Email validation function
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validate single field
+  const validateField = (name: string, value: string): string | undefined => {
+    switch (name) {
+      case 'name':
+        if (!value.trim()) return 'Name is required';
+        if (value.trim().length < 2) return 'Name must be at least 2 characters';
+        return undefined;
+      case 'email':
+        if (!value.trim()) return 'Email is required';
+        if (!isValidEmail(value)) return 'Please enter a valid email address';
+        return undefined;
+      case 'message':
+        if (!value.trim()) return 'Message is required';
+        if (value.trim().length < 10) return 'Message must be at least 10 characters';
+        return undefined;
+      default:
+        return undefined;
+    }
+  };
+
+  // Validate all fields
+  const validateForm = (): boolean => {
+    const newErrors: FormErrors = {
+      name: validateField('name', formData.name),
+      email: validateField('email', formData.email),
+      message: validateField('message', formData.message)
+    };
+
+    setErrors(newErrors);
+    return !newErrors.name && !newErrors.email && !newErrors.message;
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    const error = validateField(field, formData[field as keyof typeof formData]);
+    setErrors({ ...errors, [field]: error });
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    // Clear error when user starts typing
+    if (touched[field]) {
+      const error = validateField(field, value);
+      setErrors({ ...errors, [field]: error });
+    }
+  };
 
   const handleSubmit = () => {
-    if (formData.name && formData.email && formData.message) {
+    // Mark all fields as touched
+    setTouched({ name: true, email: true, message: true });
+
+    if (validateForm()) {
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 4000);
       setFormData({ name: '', email: '', inquiryType: 'General Inquiry', message: '' });
+      setErrors({});
+      setTouched({});
     }
   };
 
@@ -49,25 +123,25 @@ export default function ContactPage() {
               {
                 icon: Mail,
                 title: 'General Inquiries',
-                content: 'aiimsgenomics@gmail.com',
+                content: CONTACT_EMAILS.general,
                 color: 'purple'
               },
               {
                 icon: Users,
                 title: 'Technical Support',
-                content: 'aiimsgenomics@gmail.com',
+                content: CONTACT_EMAILS.support,
                 color: 'cyan'
               },
               {
                 icon: Microscope,
                 title: 'Research Collaboration',
-                content: 'drprabudhgoel@gmail.com',
+                content: CONTACT_EMAILS.collaboration,
                 color: 'teal'
               },
               {
                 icon: Building2,
                 title: 'Platform Access',
-                content: 'aiimsgenomics@gmail.com',
+                content: CONTACT_EMAILS.access,
                 color: 'purple'
               }
             ].map((item, i) => {
@@ -102,7 +176,7 @@ export default function ContactPage() {
                   <p className="text-slate-600 mb-8">Fill out the form below and we'll get back to you as soon as possible</p>
 
                   {submitted && (
-                    <div className="mb-8 p-5 bg-cyan/5 border-2 border-cyan/20 rounded-xl flex items-start gap-3">
+                    <div className="mb-8 p-5 bg-cyan/5 border-2 border-cyan/20 rounded-xl flex items-start gap-3" role="alert" aria-live="polite">
                       <CheckCircle2 className="h-6 w-6 text-cyan flex-shrink-0 mt-0.5" />
                       <div>
                         <p className="text-cyan font-semibold text-lg">Message sent successfully!</p>
@@ -113,34 +187,76 @@ export default function ContactPage() {
 
                   <div className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
+                      {/* Name Field */}
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Name *</label>
+                        <label htmlFor="name" className="block text-sm font-semibold text-slate-700 mb-2">
+                          Name <span className="text-red-500">*</span>
+                        </label>
                         <input
+                          id="name"
                           type="text"
                           value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 transition-all"
+                          onChange={(e) => handleChange('name', e.target.value)}
+                          onBlur={() => handleBlur('name')}
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan/20 transition-all ${
+                            errors.name && touched.name
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-slate-200 focus:border-cyan'
+                          }`}
                           placeholder="Your full name"
+                          aria-required="true"
+                          aria-invalid={!!(errors.name && touched.name)}
+                          aria-describedby={errors.name && touched.name ? 'name-error' : undefined}
                         />
+                        {errors.name && touched.name && (
+                          <div id="name-error" className="flex items-center gap-2 mt-2 text-red-600 text-sm" role="alert">
+                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                            <span>{errors.name}</span>
+                          </div>
+                        )}
                       </div>
+
+                      {/* Email Field */}
                       <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-2">Email *</label>
+                        <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
+                          Email <span className="text-red-500">*</span>
+                        </label>
                         <input
+                          id="email"
                           type="email"
                           value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 transition-all"
+                          onChange={(e) => handleChange('email', e.target.value)}
+                          onBlur={() => handleBlur('email')}
+                          className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan/20 transition-all ${
+                            errors.email && touched.email
+                              ? 'border-red-500 focus:border-red-500'
+                              : 'border-slate-200 focus:border-cyan'
+                          }`}
                           placeholder="your@email.com"
+                          aria-required="true"
+                          aria-invalid={!!(errors.email && touched.email)}
+                          aria-describedby={errors.email && touched.email ? 'email-error' : undefined}
                         />
+                        {errors.email && touched.email && (
+                          <div id="email-error" className="flex items-center gap-2 mt-2 text-red-600 text-sm" role="alert">
+                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                            <span>{errors.email}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
+                    {/* Inquiry Type Field */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Inquiry Type *</label>
+                      <label htmlFor="inquiryType" className="block text-sm font-semibold text-slate-700 mb-2">
+                        Inquiry Type <span className="text-red-500">*</span>
+                      </label>
                       <select
+                        id="inquiryType"
                         value={formData.inquiryType}
-                        onChange={(e) => setFormData({ ...formData, inquiryType: e.target.value })}
+                        onChange={(e) => handleChange('inquiryType', e.target.value)}
                         className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 transition-all bg-white"
+                        aria-required="true"
                       >
                         <option>General Inquiry</option>
                         <option>Technical Support</option>
@@ -151,21 +267,39 @@ export default function ContactPage() {
                       </select>
                     </div>
 
+                    {/* Message Field */}
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Message *</label>
+                      <label htmlFor="message" className="block text-sm font-semibold text-slate-700 mb-2">
+                        Message <span className="text-red-500">*</span>
+                      </label>
                       <textarea
+                        id="message"
                         rows={8}
                         value={formData.message}
-                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                        className="w-full px-4 py-3 border-2 border-slate-200 rounded-lg focus:outline-none focus:border-cyan focus:ring-2 focus:ring-cyan/20 transition-all resize-none"
+                        onChange={(e) => handleChange('message', e.target.value)}
+                        onBlur={() => handleBlur('message')}
+                        className={`w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan/20 transition-all resize-none ${
+                          errors.message && touched.message
+                            ? 'border-red-500 focus:border-red-500'
+                            : 'border-slate-200 focus:border-cyan'
+                        }`}
                         placeholder="Tell us more about your inquiry..."
+                        aria-required="true"
+                        aria-invalid={!!(errors.message && touched.message)}
+                        aria-describedby={errors.message && touched.message ? 'message-error' : undefined}
                       />
+                      {errors.message && touched.message && (
+                        <div id="message-error" className="flex items-center gap-2 mt-2 text-red-600 text-sm" role="alert">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                          <span>{errors.message}</span>
+                        </div>
+                      )}
                     </div>
 
                     <Button
                       onClick={handleSubmit}
                       className="w-full bg-purple-primary hover:bg-purple-light text-white py-6 text-base font-semibold"
-                      disabled={!formData.name || !formData.email || !formData.message}
+                      type="submit"
                     >
                       Send Message
                     </Button>

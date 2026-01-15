@@ -13,18 +13,19 @@ import {
   CheckCircle2,
   ArrowRight,
   Download,
-  Target
+  Target,
+  LucideIcon
 } from 'lucide-react';
 
 interface UseCaseProps {
-  icon: any;
+  icon: LucideIcon;
   title: string;
   subtitle: string;
   description: string;
   challenges: string[];
   solutions: string[];
   outcomes: { metric: string; value: string }[];
-  color: 'purple' | 'cyan' | 'teal' | 'indigo';
+  color: 'purple' | 'cyan' | 'teal';
 }
 
 interface CaseStudyProps {
@@ -235,13 +236,6 @@ export default function UseCasesPage() {
             text: 'text-teal',
             border: 'border-teal/20',
             gradient: 'from-teal/5 to-white'
-          },
-          indigo: {
-            bg: 'bg-indigo-600',
-            bgLight: 'bg-indigo-100',
-            text: 'text-indigo-600',
-            border: 'border-indigo-200',
-            gradient: 'from-indigo-50 to-white'
           }
         };
 
