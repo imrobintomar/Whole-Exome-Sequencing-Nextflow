@@ -25,7 +25,9 @@ const badgeVariants = cva(
           "border-transparent bg-accent-cyan text-white hover:bg-accent-cyan/80",
         teal:
           "border-transparent bg-accent-teal text-white hover:bg-accent-teal/80",
-      },
+         purple:
+          "border-transparent bg-purple-primary text-white hover:bg-purple-primary/80",
+        },
     },
     defaultVariants: {
       variant: "default",
