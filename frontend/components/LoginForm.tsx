@@ -8,6 +8,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Dna, Loader, AlertCircle, Mail } from 'lucide-react';
+import DNABackground from './DNABackground';
 
 interface LoginFormProps {
   onLogin: () => void;
@@ -79,8 +80,9 @@ export default function LoginForm({ onLogin, onToggle }: LoginFormProps) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="flex min-h-screen items-center justify-center relative p-4 overflow-hidden">
+      <DNABackground />
+      <Card className="w-full max-w-md relative z-10 backdrop-blur-sm bg-white/95 shadow-2xl border-2 border-purple-primary/10">
         <CardHeader className="space-y-1 text-center">
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Dna className="h-6 w-6 text-primary" />
