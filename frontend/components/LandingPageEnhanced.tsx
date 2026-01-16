@@ -32,7 +32,7 @@ interface LandingPageProps {
   onSignIn: () => void;
 }
 
-export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) {
+export default function LandingPageEnhanced({ onNavigate, onSignIn }: LandingPageProps) {
   const [activeSolution, setActiveSolution] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -262,6 +262,22 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
             </div>
           </div>
         </div>
+
+        {/* Custom Animations */}
+        <style jsx>{`
+          @keyframes float {
+            0%, 100% {
+              transform: translateY(0px);
+            }
+            50% {
+              transform: translateY(-10px);
+            }
+          }
+
+          .animate-float {
+            animation: float 3s ease-in-out infinite;
+          }
+        `}</style>
       </section>
 
       {/* What We Do Section with Slide-in Animation */}
