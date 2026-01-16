@@ -4,54 +4,113 @@
 
 @layer base {
   :root {
+    /* Background & Foreground */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
+
+    /* Card */
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
+
+    /* Popover */
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 248 100% 13%;
+
+    /* Primary - Vibrant Purple */
+    --primary: 246 83% 35%;
     --primary-foreground: 210 40% 98%;
+    --primary-light: 246 83% 55%;
+    --primary-dark: 246 83% 25%;
+
+    /* Secondary */
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+
+    /* Muted */
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+
+    /* Accent Colors */
     --accent: 188 94% 43%;
     --accent-foreground: 222.2 47.4% 11.2%;
+    --accent-cyan: 188 94% 43%;
+    --accent-teal: 168 76% 42%;
+    --accent-coral: 15 90% 65%;
+
+    /* Destructive */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
+    /* Border & Input */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 188 94% 43%;
+    --ring: 246 83% 35%;
+
+    /* Radius */
     --radius: 0.75rem;
-    --accent-cyan: 188 94% 43%;
-    --accent-teal: 174 72% 56%;
-    --primary-light: 248 100% 18%;
-    --primary-dark: 248 100% 8%;
+
+    /* Status Colors */
+    --status-completed: 158 64% 52%;
+    --status-running: 217 91% 60%;
+    --status-pending: 43 96% 56%;
+    --status-failed: 0 84% 60%;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+    --shadow-xl: 0 20px 40px rgba(0,0,0,0.15);
+
+    /* Glass Effect */
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.2);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Background & Foreground */
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
+
+    /* Card - Slightly elevated surface */
+    --card: 217 33% 17%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
+
+    /* Popover */
+    --popover: 217 33% 17%;
     --popover-foreground: 210 40% 98%;
-    --primary: 246 95% 35%;
+
+    /* Primary - Brighter for dark mode */
+    --primary: 246 83% 60%;
     --primary-foreground: 210 40% 98%;
+    --primary-light: 246 83% 70%;
+    --primary-dark: 246 83% 45%;
+
+    /* Secondary */
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
+
+    /* Muted */
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
+
+    /* Accent */
     --accent: 188 94% 43%;
     --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --accent-cyan: 188 94% 50%;
+    --accent-teal: 168 76% 50%;
+
+    /* Destructive */
+    --destructive: 0 62.8% 50%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
+
+    /* Border & Input */
+    --border: 217.2 32.6% 25%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 188 94% 43%;
-    --accent-cyan: 188 94% 43%;
-    --accent-teal: 174 72% 56%;
+    --ring: 246 83% 60%;
+
+    /* Glass Effect - Dark Mode */
+    --glass-bg: rgba(17, 24, 39, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -60,6 +119,367 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* ============================================
+   ANIMATIONS & KEYFRAMES
+   ============================================ */
+@layer utilities {
+  /* View Transitions */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .animate-fade-slide-in {
+    animation: fadeSlideIn 0.3s ease-out;
+  }
+
+  .animate-fade-slide-up {
+    animation: fadeSlideUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Continuous Animations */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Number Counter Animation */
+  .animate-count-up {
+    animation: countUp 0.6s ease-out;
+  }
+
+  /* Status Pulse */
+  .animate-status-pulse {
+    animation: statusPulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow {
+  from { box-shadow: 0 0 20px rgba(67, 24, 255, 0.2); }
+  to { box-shadow: 0 0 40px rgba(67, 24, 255, 0.4); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ============================================
+   GLASS MORPHISM UTILITIES
+   ============================================ */
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-card {
+    @apply glass rounded-xl shadow-lg;
+  }
+}
+
+/* ============================================
+   GRADIENT UTILITIES
+   ============================================ */
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(246 83% 35%) 0%, hsl(280 70% 50%) 100%);
+  }
+
+  .gradient-success {
+    background: linear-gradient(135deg, #10B981 0%, #06b6d4 100%);
+  }
+
+  .gradient-info {
+    background: linear-gradient(135deg, #3B82F6 0%, #06b6d4 100%);
+  }
+
+  .gradient-warning {
+    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+  }
+
+  .gradient-danger {
+    background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+  }
+
+  .gradient-purple-cyan {
+    background: linear-gradient(135deg, #4318FF 0%, #06b6d4 100%);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, hsl(246 83% 50%) 0%, hsl(188 94% 43%) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(var(--background), var(--background)) padding-box,
+                linear-gradient(135deg, hsl(246 83% 50%), hsl(188 94% 43%)) border-box;
+    border: 2px solid transparent;
+  }
+}
+
+/* ============================================
+   CARD HOVER EFFECTS
+   ============================================ */
+@layer utilities {
+  .card-hover {
+    @apply transition-all duration-300 ease-out;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-glow:hover {
+    box-shadow: 0 0 40px rgba(67, 24, 255, 0.15);
+  }
+
+  .dark .card-glow:hover {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.25);
+  }
+}
+
+/* ============================================
+   BUTTON EFFECTS
+   ============================================ */
+@layer utilities {
+  .btn-press:active {
+    transform: scale(0.98);
+  }
+
+  .btn-glow {
+    @apply transition-shadow duration-300;
+  }
+
+  .btn-glow:hover {
+    box-shadow: 0 0 30px rgba(67, 24, 255, 0.4);
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+/* ============================================
+   STATUS INDICATOR STYLES
+   ============================================ */
+@layer components {
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-completed {
+    @apply bg-emerald-500;
+  }
+
+  .status-dot-running {
+    @apply bg-blue-500 animate-pulse;
+  }
+
+  .status-dot-pending {
+    @apply bg-amber-500;
+  }
+
+  .status-dot-failed {
+    @apply bg-red-500;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-badge-completed {
+    @apply bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400;
+  }
+
+  .status-badge-running {
+    @apply bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400;
+  }
+
+  .status-badge-pending {
+    @apply bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400;
+  }
+
+  .status-badge-failed {
+    @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400;
+  }
+}
+
+/* ============================================
+   CHART CUSTOM STYLES
+   ============================================ */
+.recharts-tooltip-wrapper {
+  @apply !outline-none;
+}
+
+.recharts-default-tooltip {
+  @apply !bg-card !border-border !rounded-lg !shadow-lg;
+}
+
+.recharts-tooltip-label {
+  @apply !text-foreground !font-semibold;
+}
+
+.recharts-tooltip-item {
+  @apply !text-muted-foreground;
+}
+
+/* ============================================
+   SKELETON LOADER
+   ============================================ */
+@layer components {
+  .skeleton {
+    @apply relative overflow-hidden bg-muted rounded;
+  }
+
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    animation: shimmer 2s linear infinite;
+    background-size: 200% 100%;
+  }
+
+  .dark .skeleton::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+  }
+}
+
+/* ============================================
+   FOCUS & ACCESSIBILITY
+   ============================================ */
+@layer base {
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
