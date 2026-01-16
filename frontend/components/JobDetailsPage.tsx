@@ -41,6 +41,7 @@ interface JobDetailsPageProps {
   onIGVClick?: (jobId: string, sampleName: string) => void;
   onVariantsClick?: (jobId: string) => void;
   onGenePanelClick?: (jobId: string) => void;
+  onPhenotypeClick?: (jobId: string, sampleName: string) => void;
 }
 
 export default function JobDetailsPage({
@@ -50,6 +51,7 @@ export default function JobDetailsPage({
   onIGVClick,
   onVariantsClick,
   onGenePanelClick,
+  onPhenotypeClick,
 }: JobDetailsPageProps) {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
@@ -513,6 +515,25 @@ export default function JobDetailsPage({
                 <Button className="w-full" disabled={job.status !== 'completed'}>
                   <Eye className="h-4 w-4 mr-2" />
                   Apply Gene Panel
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:border-purple-primary transition-colors"
+              onClick={() => onPhenotypeClick?.(jobId, job.sample_name)}
+            >
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Dna className="h-5 w-5 text-purple-primary" />
+                  Phenotype-Driven Analysis
+                </CardTitle>
+                <CardDescription>Prioritize variants using HPO terms and Exomiser</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button className="w-full bg-purple-primary hover:bg-purple-primary/90" disabled={job.status !== 'completed'}>
+                  <Dna className="h-4 w-4 mr-2" />
+                  Run Phenotype Analysis
                 </Button>
               </CardContent>
             </Card>

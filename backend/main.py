@@ -16,7 +16,7 @@ import traceback
 
 from database import get_db, init_db, User, Job, JobStatus
 from firebase_auth import get_current_user
-from schemas import JobResponse, JobDetailResponse, GeneListFilter
+from schemas import JobResponse, JobDetailResponse, GeneListFilter, HPOPhenotypeInput
 from config import settings
 from pipeline import run_job_async, PipelineRunner
 from gene_panels import GenePanelManager
@@ -1236,6 +1236,201 @@ async def generate_filtered_visualizations(
                 os.remove(tmp_tsv_path)
             except:
                 pass  # Ignore cleanup errors
+
+
+# Phenotype-Driven Analysis Endpoints
+@app.post("/jobs/{job_id}/phenotype/analyze")
+async def run_phenotype_analysis(
+    job_id: str,
+    phenotype_input: HPOPhenotypeInput,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Run Exomiser phenotype-driven analysis on completed job.
+    CRITICAL: Runs on original VCF, augments ANNOVAR output.
+    """
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.status != JobStatus.COMPLETED:
+        raise HTTPException(status_code=400, detail="Job must be completed first")
+
+    if not job.raw_vcf_path or not os.path.exists(job.raw_vcf_path):
+        raise HTTPException(status_code=404, detail="VCF file not found")
+
+    if not job.annotated_vcf_path or not os.path.exists(job.annotated_vcf_path):
+        raise HTTPException(status_code=404, detail="ANNOVAR file not found")
+
+    # Store HPO terms
+    job.hpo_terms = ','.join(phenotype_input.hpo_terms)
+    db.commit()
+
+    # Run phenotype analysis in background
+    def run_phenotype_task():
+        from database import SessionLocal
+        import subprocess
+        import json
+
+        db_thread = SessionLocal()
+        try:
+            job_thread = db_thread.query(Job).filter(Job.job_id == job_id).first()
+            if not job_thread:
+                return
+
+            # Prepare Nextflow command
+            results_dir = Path(settings.RESULTS_DIR) / job_id
+            results_dir.mkdir(parents=True, exist_ok=True)
+
+            # Convert relative paths to absolute paths
+            backend_dir = Path(__file__).parent.resolve()
+            vcf_path = job_thread.raw_vcf_path
+            annovar_path = job_thread.annotated_vcf_path
+
+            # Make paths absolute if they're relative
+            if not vcf_path.startswith('/'):
+                vcf_path = str(backend_dir / vcf_path)
+            if not annovar_path.startswith('/'):
+                annovar_path = str(backend_dir / annovar_path)
+
+            # Resolve symlinks to get actual file paths
+            vcf_path = str(Path(vcf_path).resolve())
+            annovar_path = str(Path(annovar_path).resolve())
+
+            print(f"Phenotype analysis - VCF: {vcf_path}")
+            print(f"Phenotype analysis - ANNOVAR: {annovar_path}")
+
+            nf_cmd = [
+                'nextflow', 'run',
+                f'{settings.NEXTFLOW_SCRIPT_DIR}/phenotype_workflow.nf',
+                '--sample_id', job_thread.sample_name,
+                '--vcf_path', vcf_path,
+                '--annovar_path', annovar_path,
+                '--hpo_terms', job_thread.hpo_terms,
+                '--output_dir', str(results_dir.resolve()),
+                '-with-report', f'{results_dir.resolve()}/phenotype_report.html',
+                '-with-trace', f'{results_dir.resolve()}/phenotype_trace.txt'
+            ]
+
+            print(f"Running Nextflow command: {' '.join(nf_cmd)}")
+            result = subprocess.run(nf_cmd, capture_output=True, text=True, cwd=settings.NEXTFLOW_SCRIPT_DIR)
+
+            print(f"Nextflow stdout: {result.stdout}")
+            print(f"Nextflow stderr: {result.stderr}")
+            print(f"Nextflow return code: {result.returncode}")
+
+            if result.returncode == 0:
+                # Update job with augmented file path
+                # Check multiple possible locations
+                possible_paths = [
+                    results_dir / f"Germline_VCF/{job_thread.sample_name}/{job_thread.sample_name}.hg38_multianno.hpo.txt",
+                    results_dir / f"Germline_VCF/{job_thread.sample_name}.hg38_multianno.hpo.txt",
+                    results_dir / f"{job_thread.sample_name}.hg38_multianno.hpo.txt",
+                ]
+
+                augmented_file = None
+                for path in possible_paths:
+                    if path.exists():
+                        augmented_file = path
+                        break
+
+                if augmented_file:
+                    job_thread.phenotype_augmented_path = str(augmented_file)
+                    db_thread.commit()
+                    print(f"Phenotype analysis complete: {augmented_file}")
+                else:
+                    print(f"WARNING: Augmented file not found in expected locations")
+            else:
+                print(f"Phenotype analysis failed: {result.stderr}")
+
+        except Exception as e:
+            print(f"Phenotype analysis error: {e}")
+            traceback.print_exc()
+        finally:
+            db_thread.close()
+
+    background_tasks.add_task(run_phenotype_task)
+
+    return {
+        "message": "Phenotype analysis started",
+        "job_id": job_id,
+        "hpo_terms": phenotype_input.hpo_terms
+    }
+
+
+@app.get("/jobs/{job_id}/phenotype/status")
+async def get_phenotype_status(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Check phenotype analysis status"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    has_phenotype = bool(job.phenotype_augmented_path and os.path.exists(job.phenotype_augmented_path))
+
+    return {
+        "job_id": job_id,
+        "has_phenotype_analysis": has_phenotype,
+        "hpo_terms": job.hpo_terms.split(',') if job.hpo_terms else [],
+        "augmented_file_path": job.phenotype_augmented_path if has_phenotype else None
+    }
+
+
+@app.get("/jobs/{job_id}/phenotype/download")
+async def download_phenotype_file(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Download augmented ANNOVAR file with phenotype columns"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if not job.phenotype_augmented_path or not os.path.exists(job.phenotype_augmented_path):
+        raise HTTPException(status_code=404, detail="Phenotype analysis not available")
+
+    return FileResponse(
+        path=job.phenotype_augmented_path,
+        filename=f"{job.sample_name}.hg38_multianno.hpo.txt",
+        media_type="text/tab-separated-values"
+    )
+
+
+@app.get("/jobs/{job_id}/phenotype/visualizations")
+async def get_phenotype_visualizations(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get phenotype analysis visualization metadata"""
+    job = db.query(Job).filter(Job.job_id == job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    results_dir = Path(settings.RESULTS_DIR) / job_id
+
+    gene_rank_plot = results_dir / f"{job.sample_name}_hpo_gene_rank.png"
+    score_dist_plot = results_dir / f"{job.sample_name}_hpo_score_dist.png"
+
+    return {
+        "job_id": job_id,
+        "visualizations": {
+            "gene_rank": {
+                "available": gene_rank_plot.exists(),
+                "path": str(gene_rank_plot) if gene_rank_plot.exists() else None
+            },
+            "score_distribution": {
+                "available": score_dist_plot.exists(),
+                "path": str(score_dist_plot) if score_dist_plot.exists() else None
+            }
+        }
+    }
 
 
 if __name__ == "__main__":

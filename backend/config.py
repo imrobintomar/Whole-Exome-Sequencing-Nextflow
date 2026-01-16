@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
     # Nextflow configuration - Can use defaults but should be overridden in .env
     NEXTFLOW_SCRIPT: str = "../main.nf"  # Relative to backend directory
+    NEXTFLOW_SCRIPT_DIR: str = "/media/drprabudh/m3/Nextflow-Script/WholeExome"
     REFERENCE_GENOME: str = "/media/drprabudh/m1/hg38/hg38.fa"  # Keep your path as default
     KNOWN_SITES_1: str = "/media/drprabudh/m1/vcf_file/Homo_sapiens_assembly38.known_indels.vcf.gz"
     KNOWN_SITES_2: str = "/media/drprabudh/m1/vcf_file/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"

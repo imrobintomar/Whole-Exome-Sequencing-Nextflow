@@ -93,13 +93,40 @@ results/
 # Nextflow
 # --------------------
 .nextflow*
+
+# --------------------
 # AI / tooling metadata
+# --------------------
 .claude/
 .vincent/
 
+# --------------------
 # FUSE temporary files
+# --------------------
 .fuse_hidden*
+
+# --------------------
+# Backend
+# --------------------
 backend/.env
-*.db
-__pycache__/
-.venv/
+backend/uploads/
+backend/results/
+backend/work/
+
+# --------------------
+# Exomiser data (large files)
+# --------------------
+exomiser-cli-*/data/
+
+# --------------------
+# Test files
+# --------------------
+test_*.py
+PHENOTYPE_TEST_RESULTS.md
+
+# --------------------
+# Duplicates (already covered above)
+# --------------------
+# *.db
+# __pycache__/
+# .venv/

@@ -52,6 +52,8 @@ class Job(Base):
     raw_vcf_path = Column(String, nullable=True)
     annotated_vcf_path = Column(String, nullable=True)
     filtered_tsv_path = Column(String, nullable=True)
+    phenotype_augmented_path = Column(String, nullable=True)
+    hpo_terms = Column(Text, nullable=True)
 
     error_message = Column(String, nullable=True)
     process_id = Column(Integer, nullable=True)  # Nextflow process ID for cancellation

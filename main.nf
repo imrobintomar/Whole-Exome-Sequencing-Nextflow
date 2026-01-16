@@ -32,6 +32,7 @@ include { applyBQSR } from './processes/05_bqsr.nf'
 include { haplotypeCaller } from './processes/06_variantcalling.nf'
 include { annovarAnnotate } from './processes/07_annotation.nf'
 include { addUniqueID } from './processes/08_filtering.nf'
+include { exomiserPhenotypeAnalysis } from './processes/09_phenotype_analysis.nf'
 
 workflow {
     // Additional runtime validation check

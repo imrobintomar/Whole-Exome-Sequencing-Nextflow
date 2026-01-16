@@ -1,0 +1,9 @@
+analysis:
+  preset: phenotype-only
+  assembly: hg38
+
+sample:
+  id: patient_1
+  hpoIds:
+    - HP:0001166   # Arachnodactyly
+    - HP:0002616   # Atrial septal defect

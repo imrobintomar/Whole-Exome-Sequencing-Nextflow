@@ -15,13 +15,14 @@ import IGVBrowserPage from './IGVBrowserPage';
 import VariantVisualizationPage from './VariantVisualizationPage';
 import GenePanelPage from './GenePanelPage';
 import SupportChat from './SupportChat';
+import PhenotypeAnalysisPage from './PhenotypeAnalysisPage';
 
 interface DashboardProps {
   user: User;
   onLogout: () => void;
 }
 
-type ViewType = 'overview' | 'upload' | 'jobs' | 'job-details' | 'analytics' | 'panels' | 'gene-panel' | 'acmg' | 'igv' | 'variants' | 'support';
+type ViewType = 'overview' | 'upload' | 'jobs' | 'job-details' | 'analytics' | 'panels' | 'gene-panel' | 'acmg' | 'igv' | 'variants' | 'support' | 'phenotype';
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [currentView, setCurrentView] = useState<ViewType>('overview');
@@ -31,6 +32,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [selectedJobForIGV, setSelectedJobForIGV] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForVariants, setSelectedJobForVariants] = useState<{ jobId: string; sampleName: string } | null>(null);
   const [selectedJobForGenePanel, setSelectedJobForGenePanel] = useState<string | null>(null);
+  const [selectedJobForPhenotype, setSelectedJobForPhenotype] = useState<{ jobId: string; sampleName: string } | null>(null);
 
   const handleJobSubmitted = () => {
     setCurrentView('jobs');
@@ -66,6 +68,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setCurrentView('gene-panel');
   };
 
+  const handlePhenotypeClick = (jobId: string, sampleName: string) => {
+    setSelectedJobForPhenotype({ jobId, sampleName });
+    setCurrentView('phenotype');
+  };
+
   const handleBackToJobs = () => {
     setCurrentView('jobs');
     setSelectedJobId(null);
@@ -73,6 +80,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     setSelectedJobForIGV(null);
     setSelectedJobForVariants(null);
     setSelectedJobForGenePanel(null);
+    setSelectedJobForPhenotype(null);
   };
 
   return (
@@ -111,6 +119,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
               onIGVClick={handleIGVClick}
               onVariantsClick={(jobId) => handleVariantsClick(jobId)}
               onGenePanelClick={handleGenePanelClick}
+              onPhenotypeClick={handlePhenotypeClick}
             />
           )}
           {currentView === 'analytics' && (
@@ -157,6 +166,13 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           )}
           {currentView === 'support' && (
             <SupportChat />
+          )}
+          {currentView === 'phenotype' && selectedJobForPhenotype && (
+            <PhenotypeAnalysisPage
+              jobId={selectedJobForPhenotype.jobId}
+              sampleName={selectedJobForPhenotype.sampleName}
+              onBack={handleBackToJobs}
+            />
           )}
         </main>
       </div>

@@ -42,6 +42,8 @@ class JobDetailResponse(JobResponse):
     raw_vcf_path: Optional[str] = None
     annotated_vcf_path: Optional[str] = None
     filtered_tsv_path: Optional[str] = None
+    phenotype_augmented_path: Optional[str] = None
+    hpo_terms: Optional[str] = None
 
 class GeneListFilter(BaseModel):
     """Request model for filtering variants by gene list"""
@@ -81,3 +83,32 @@ class GeneListFilter(BaseModel):
                 unique_genes.append(gene)
 
         return unique_genes
+
+class HPOPhenotypeInput(BaseModel):
+    """Request model for HPO phenotype-driven analysis"""
+    hpo_terms: List[str] = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="List of HPO term IDs (e.g., HP:0000001)"
+    )
+
+    @field_validator('hpo_terms')
+    @classmethod
+    def validate_hpo_terms(cls, hpo_terms: List[str]) -> List[str]:
+        """Validate HPO term IDs"""
+        validated_terms = []
+        hpo_pattern = re.compile(r'^HP:\d{7}$', re.IGNORECASE)
+
+        for term in hpo_terms:
+            term = term.strip().upper()
+            if not term:
+                continue
+            if not hpo_pattern.match(term):
+                raise ValueError(f"Invalid HPO term: {term}. Format: HP:0000000")
+            validated_terms.append(term)
+
+        if not validated_terms:
+            raise ValueError("HPO term list cannot be empty")
+
+        return list(set(validated_terms))
