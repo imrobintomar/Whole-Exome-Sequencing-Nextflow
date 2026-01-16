@@ -25,10 +25,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu""
+  DropdownMenuLabel,       
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 
 interface DashboardHeaderProps {
   user: UserType
