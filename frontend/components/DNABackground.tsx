@@ -36,12 +36,12 @@ export default function DNABackground() {
 
     // Color scheme matching purple theme
     const colors = [
-      '#10065e', // Purple primary
-      '#1e1b4b', // Purple light
+      '#060140', // Purple primary
+      '#0a0560', // Purple light
       '#06b6d4', // Cyan
       '#14b8a6', // Teal
       '#8b5cf6', // Light purple
-      '#6366f1'  // Indigo
+      '#7c3aed'  // Violet
     ];
 
     // Create particles

@@ -55,9 +55,9 @@ module.exports = {
         },
         // Direct color values for easier use
         purple: {
-          primary: '#10065e',
-          light: '#1e1b4b',
-          dark: '#0a0438',
+          primary: '#060140',
+          light: '#0a0560',
+          dark: '#030120',
         },
         cyan: {
           DEFAULT: '#06b6d4',

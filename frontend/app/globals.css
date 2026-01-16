@@ -10,7 +10,7 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 246 95% 21%;
+    --primary: 248 100% 13%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -26,8 +26,8 @@
     --radius: 0.75rem;
     --accent-cyan: 188 94% 43%;
     --accent-teal: 174 72% 56%;
-    --primary-light: 246 46% 20%;
-    --primary-dark: 246 88% 13%;
+    --primary-light: 248 100% 18%;
+    --primary-dark: 248 100% 8%;
   }
 
   .dark {

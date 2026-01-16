@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +18,9 @@ import {
   Award,
   Globe,
   Zap,
-  Target
+  Target,
+  ChevronRight,
+  CheckCircle2
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -26,243 +29,267 @@ interface LandingPageProps {
 }
 
 export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) {
+  const [activeSolution, setActiveSolution] = useState(0);
+
+  const solutions = [
+    {
+      title: 'Research & Discovery',
+      subtitle: 'Accelerate Genomic Discovery',
+      description: 'Comprehensive WES analysis for biomarker identification, population studies, and novel variant discovery. Scalable pipeline supporting batch processing of hundreds of samples with standardized quality metrics.',
+      features: [
+        'Batch processing up to 500 samples',
+        'Population-scale variant analysis',
+        'Custom gene panel creation',
+        'Export ready for publication'
+      ],
+      icon: Microscope,
+      color: 'cyan'
+    },
+    {
+      title: 'Clinical Diagnostics',
+      subtitle: 'Clinical-Grade Variant Analysis',
+      description: 'Production-ready pipeline for rare disease diagnosis, cancer genomics, and pharmacogenomics. ACMG classification engine with automated pathogenicity scoring and secondary findings reporting.',
+      features: [
+        'ACMG/AMP 2015 guidelines',
+        'Automated clinical reports',
+        'HIPAA-compliant infrastructure',
+        '2-4 hour turnaround time'
+      ],
+      icon: Building2,
+      color: 'purple'
+    },
+    {
+      title: 'Pharmaceutical R&D',
+      subtitle: 'Drug Development Support',
+      description: 'Streamlined variant analysis for clinical trials, patient stratification, and biomarker validation. API integration for seamless LIMS connectivity and multi-site collaboration.',
+      features: [
+        'Clinical trial patient selection',
+        'Biomarker discovery pipeline',
+        'RESTful API integration',
+        'Multi-center data aggregation'
+      ],
+      icon: FlaskConical,
+      color: 'teal'
+    }
+  ];
+
   return (
     <>
-      {/* Hero Section - Purple Gradient */}
-      <section className="relative bg-gradient-to-br from-purple-primary via-purple-light to-purple-primary overflow-hidden py-24 sm:py-32">
-        {/* Subtle floating elements */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-cyan rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent-teal rounded-full blur-3xl"></div>
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-[#060140] via-[#0a0560] to-[#060140] overflow-hidden py-20 sm:py-32 lg:py-40">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-20 left-10 w-96 h-96 bg-cyan rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-[32rem] h-[32rem] bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
+
+        {/* Geometric pattern overlay */}
+        <div className="absolute inset-0 opacity-5">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center space-y-8">
-            <Badge variant="cyan" className="w-fit mx-auto text-sm px-4 py-2">
-              <Dna className="inline-block w-4 h-4 mr-2" />
-              Clinical-Grade Genomics Platform
-            </Badge>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+              <Dna className="w-4 h-4 text-cyan" />
+              <span className="text-sm font-medium text-white">We Solve Problems in Genomics</span>
+            </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight max-w-5xl mx-auto">
-              Whole Exome Sequencing Analysis for Research & Clinical Applications
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white leading-tight max-w-5xl mx-auto">
+              Whole Exome Sequencing
+              <span className="block text-cyan mt-2">Analysis Platform</span>
             </h1>
 
-            <p className="text-xl text-blue-100 leading-relaxed max-w-3xl mx-auto">
-              Production-grade WES pipeline delivering comprehensive genomic insights with ACMG classification.
-              From FASTQ to clinically actionable variants in hours.
+            <p className="text-xl sm:text-2xl text-blue-100 leading-relaxed max-w-3xl mx-auto font-light">
+              Clinical-grade WES pipeline delivering comprehensive genomic insights with ACMG classification.
+              From FASTQ to actionable variants in hours.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-6">
               <Button
                 size="lg"
-                className="bg-cyan hover:bg-cyan-light text-white text-lg px-8 py-6 h-auto shadow-xl"
+                className="bg-cyan hover:bg-cyan-light text-white text-lg px-10 py-7 h-auto shadow-2xl hover:shadow-cyan/50 transition-all duration-300 hover:scale-105"
                 onClick={onSignIn}
               >
-                Start Free Trial
+                Book a Discovery Call
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-lg px-8 py-6 h-auto backdrop-blur-sm"
+                className="bg-transparent hover:bg-white/10 text-white border-2 border-white/40 hover:border-white/60 text-lg px-10 py-7 h-auto backdrop-blur-sm transition-all duration-300"
                 onClick={() => onNavigate('features')}
               >
-                Explore Features
+                Explore Platform
               </Button>
             </div>
-
-            {/* Trust Indicators */}
-            <div className="grid grid-cols-3 gap-8 pt-12 max-w-3xl mx-auto">
-              <div className="text-center">
-                <div className="flex justify-center mb-3">
-                  <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <Shield className="h-7 w-7 text-cyan" />
-                  </div>
-                </div>
-                <div className="text-sm text-blue-100 font-medium">Clinical-Grade Security</div>
-              </div>
-              <div className="text-center">
-                <div className="flex justify-center mb-3">
-                  <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <Award className="h-7 w-7 text-cyan" />
-                  </div>
-                </div>
-                <div className="text-sm text-blue-100 font-medium">Validated Pipeline</div>
-              </div>
-              <div className="text-center">
-                <div className="flex justify-center mb-3">
-                  <div className="w-14 h-14 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                    <Globe className="h-7 w-7 text-cyan" />
-                  </div>
-                </div>
-                <div className="text-sm text-blue-100 font-medium">Global Standards</div>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Trusted By Section */}
-      <section className="py-12 bg-slate-50 border-y border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-slate-600 mb-6 uppercase tracking-wide font-semibold">
-            Trusted by Research Institutions Worldwide
+      {/* What We Do Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6">
+            What We Do
+          </h2>
+          <p className="text-xl text-slate-600 leading-relaxed max-w-4xl mx-auto">
+            ATGC Flow provides a <strong className="text-[#060140]">production-grade Whole Exome Sequencing analysis platform</strong> that transforms raw genomic data into clinically actionable insights. Our automated pipeline combines best-practice bioinformatics tools with advanced annotation databases and machine learning-based variant classification, enabling researchers and clinicians to accelerate discovery and improve diagnostic accuracy.
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60">
-            {/* Placeholder for institution logos */}
-            <div className="text-slate-400 text-sm font-medium">Research Labs</div>
-            <div className="text-slate-400 text-sm font-medium">Clinical Institutions</div>
-            <div className="text-slate-400 text-sm font-medium">Biotech Companies</div>
-            <div className="text-slate-400 text-sm font-medium">Academic Centers</div>
-          </div>
         </div>
       </section>
 
-      {/* Pipeline Overview Section - Light Background */}
-      <section className="py-24 bg-gradient-to-br from-slate-50 via-cyan-50/30 to-purple-50/20">
+      {/* Solutions Section - Tab-Based */}
+      <section className="py-24 bg-gradient-to-br from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-purple-primary text-purple-primary">
-              8-Stage Pipeline
+            <Badge variant="outline" className="mb-4 border-[#060140] text-[#060140] text-sm px-4 py-2">
+              Solutions
             </Badge>
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Comprehensive Analysis Pipeline</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              From raw FASTQ to annotated variants with clinical insights
+            <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
+              Tailored for Your Genomics Workflow
+            </h2>
+            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
+              Whether you're advancing research, diagnosing rare diseases, or developing therapeutics,
+              our platform adapts to your specific needs
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                phase: 'Phase 1',
-                title: 'Quality Control',
-                duration: '5-10 min',
-                description: 'FastP quality filtering and adapter trimming with comprehensive QC metrics.',
-                icon: Activity,
-                color: 'cyan'
-              },
-              {
-                phase: 'Phase 2',
-                title: 'Alignment & Processing',
-                duration: '30-60 min',
-                description: 'BWA-MEM alignment to GRCh38, sorting, duplicate marking, and BQSR.',
-                icon: Database,
-                color: 'purple'
-              },
-              {
-                phase: 'Phase 3',
-                title: 'Variant Calling',
-                duration: '45-90 min',
-                description: 'GATK HaplotypeCaller for high-quality variant detection.',
-                icon: Dna,
-                color: 'teal'
-              },
-              {
-                phase: 'Phase 4',
-                title: 'Annotation & Classification',
-                duration: '20-40 min',
-                description: 'Multi-source annotation with ACMG classification and clinical insights.',
-                icon: BarChart3,
-                color: 'cyan'
-              }
-            ].map((item, i) => {
-              const IconComponent = item.icon;
-              const colorClasses = {
-                cyan: 'bg-cyan/10 text-cyan',
-                purple: 'bg-purple-primary/10 text-purple-primary',
-                teal: 'bg-teal/10 text-teal'
-              };
+          {/* Tab Navigation */}
+          <div className="flex flex-col lg:flex-row gap-4 mb-8 justify-center">
+            {solutions.map((solution, index) => {
+              const IconComponent = solution.icon;
               return (
-                <Card key={i} className="relative border-slate-200 bg-white hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                  <CardContent className="p-8">
-                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${colorClasses[item.color as keyof typeof colorClasses]}`}>
-                      <IconComponent className="h-7 w-7" />
-                    </div>
-                    <div className="text-xs font-semibold text-purple-primary mb-2">{item.phase}</div>
-                    <h3 className="text-xl font-bold mb-3 text-slate-900">{item.title}</h3>
-                    <p className="text-slate-600 text-sm mb-4 leading-relaxed">{item.description}</p>
-                    <div className="text-xs text-slate-500 flex items-center gap-2">
-                      <Activity className="h-3 w-3" />
-                      {item.duration}
-                    </div>
-                  </CardContent>
-                </Card>
+                <button
+                  key={index}
+                  onClick={() => setActiveSolution(index)}
+                  className={`flex items-center gap-3 px-6 py-4 rounded-xl transition-all duration-300 ${
+                    activeSolution === index
+                      ? 'bg-[#060140] text-white shadow-xl scale-105'
+                      : 'bg-white text-slate-700 hover:bg-slate-50 border-2 border-slate-200'
+                  }`}
+                >
+                  <IconComponent className="h-6 w-6" />
+                  <span className="font-bold text-lg">{solution.title}</span>
+                </button>
               );
             })}
           </div>
 
-          <div className="text-center mt-12">
-            <Button
-              variant="outline"
-              className="border-purple-primary text-purple-primary hover:bg-purple-primary hover:text-white"
-              onClick={() => onNavigate('features')}
-            >
-              View Full Pipeline Details
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          {/* Tab Content */}
+          <div className="relative">
+            {solutions.map((solution, index) => {
+              const IconComponent = solution.icon;
+              const colorClasses = {
+                cyan: 'from-cyan/10 to-transparent',
+                purple: 'from-purple-500/10 to-transparent',
+                teal: 'from-teal/10 to-transparent'
+              };
+              return (
+                <div
+                  key={index}
+                  className={`transition-all duration-500 ${
+                    activeSolution === index ? 'opacity-100 relative' : 'opacity-0 absolute inset-0 pointer-events-none'
+                  }`}
+                >
+                  <Card className={`border-2 border-slate-200 bg-gradient-to-br ${colorClasses[solution.color as keyof typeof colorClasses]}`}>
+                    <CardContent className="p-12">
+                      <div className="grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                          <div className="w-20 h-20 bg-[#060140] rounded-2xl flex items-center justify-center mb-6">
+                            <IconComponent className="h-10 w-10 text-cyan" />
+                          </div>
+                          <h3 className="text-3xl font-bold text-slate-900 mb-2">{solution.subtitle}</h3>
+                          <p className="text-lg text-slate-600 leading-relaxed mb-8">
+                            {solution.description}
+                          </p>
+                          <div className="space-y-3">
+                            {solution.features.map((feature, idx) => (
+                              <div key={idx} className="flex items-start gap-3">
+                                <CheckCircle2 className="h-5 w-5 text-cyan flex-shrink-0 mt-1" />
+                                <span className="text-slate-700">{feature}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <Button
+                            className="mt-8 bg-[#060140] hover:bg-[#0a0560] text-white"
+                            onClick={() => onNavigate('usecases')}
+                          >
+                            Learn More
+                            <ChevronRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="relative">
+                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center">
+                            <IconComponent className="h-48 w-48 text-slate-300" />
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Features Grid - 2 Column */}
+      {/* Company Values Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4 border-cyan text-cyan">
-              Platform Capabilities
-            </Badge>
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Everything You Need for Clinical Genomics</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Production-ready tools designed for research and clinical applications
-            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
+              Our Core Values
+            </h2>
+            <p className="text-xl text-slate-600">What drives us to deliver excellence</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-12">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: FlaskConical,
-                title: 'ACMG Classification Engine',
-                description: 'Automated variant pathogenicity prediction using ACMG/AMP 2015 guidelines. Comprehensive evidence scoring with PVS1, PS1-4, PM1-6, PP1-5, BA1, BS1-4, BP1-7 criteria.',
-                color: 'cyan'
-              },
-              {
-                icon: Target,
-                title: 'Gene Panel Filtering',
-                description: 'PanelApp integration for 400+ disease-specific gene panels. Filter variants by ACMG SF v3.2 secondary findings, cancer panels, or custom gene lists.',
-                color: 'purple'
-              },
-              {
-                icon: Microscope,
-                title: 'IGV Genome Browser',
-                description: 'Interactive visualization with IGV.js integration. Real-time variant inspection with BAM/VCF track support, read depth analysis, and allele fraction plots.',
-                color: 'teal'
-              },
-              {
                 icon: Shield,
-                title: 'Enterprise Security',
-                description: 'HIPAA-compliant architecture with Firebase authentication. End-to-end encryption, audit logging, and secure session management for clinical data protection.',
-                color: 'cyan'
+                title: 'Quality First',
+                description: 'Clinical-grade quality is our core tenet. Every variant call undergoes rigorous validation against benchmark datasets.',
+                shape: 'square'
+              },
+              {
+                icon: Zap,
+                title: 'Innovation',
+                description: 'Constantly evolving our pipeline with cutting-edge algorithms and the latest genomic databases.',
+                shape: 'circle'
+              },
+              {
+                icon: Users,
+                title: 'Collaboration',
+                description: 'Built with feedback from leading researchers, clinicians, and bioinformaticians worldwide.',
+                shape: 'triangle'
+              },
+              {
+                icon: Globe,
+                title: 'Global Impact',
+                description: 'Democratizing access to clinical-grade genomics for institutions and researchers everywhere.',
+                shape: 'hexagon'
               }
-            ].map((feature, i) => {
-              const IconComponent = feature.icon;
-              const colorClasses = {
-                cyan: 'from-cyan/20 to-cyan/5 border-cyan/20',
-                purple: 'from-purple-primary/20 to-purple-primary/5 border-purple-primary/20',
-                teal: 'from-teal/20 to-teal/5 border-teal/20'
-              };
-              const iconColors = {
-                cyan: 'text-cyan',
-                purple: 'text-purple-primary',
-                teal: 'text-teal'
-              };
+            ].map((value, index) => {
+              const IconComponent = value.icon;
               return (
-                <Card key={i} className={`border-2 bg-gradient-to-br ${colorClasses[feature.color as keyof typeof colorClasses]} hover:shadow-xl transition-all duration-300`}>
-                  <CardContent className="p-10">
-                    <div className={`w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center mb-6 ${iconColors[feature.color as keyof typeof iconColors]}`}>
-                      <IconComponent className="h-8 w-8" />
+                <Card key={index} className="border-2 border-slate-200 hover:border-[#060140] hover:shadow-xl transition-all duration-300 group">
+                  <CardContent className="p-8 text-center">
+                    <div className="relative w-20 h-20 mx-auto mb-6">
+                      <div className="absolute inset-0 bg-gradient-to-br from-[#060140] to-cyan rounded-2xl group-hover:rotate-12 transition-transform duration-300"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <IconComponent className="h-10 w-10 text-white relative z-10" />
+                      </div>
                     </div>
-                    <h3 className="text-2xl font-bold text-slate-900 mb-4">{feature.title}</h3>
-                    <p className="text-slate-600 leading-relaxed">{feature.description}</p>
+                    <h3 className="text-xl font-bold text-slate-900 mb-3">{value.title}</h3>
+                    <p className="text-slate-600 leading-relaxed text-sm">{value.description}</p>
                   </CardContent>
                 </Card>
               );
@@ -271,132 +298,114 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
         </div>
       </section>
 
-      {/* Use Cases Section */}
-      <section className="py-24 bg-gradient-to-br from-slate-50 to-white">
+      {/* Trust Indicators - Client Logos */}
+      <section className="py-16 bg-gradient-to-br from-slate-50 to-white border-y border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-slate-600 mb-8 uppercase tracking-wider font-semibold">
+            Trusted by Leading Institutions
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-12 lg:gap-16 opacity-50">
+            {[
+              'Research Universities',
+              'Clinical Labs',
+              'Biotech Companies',
+              'Pharmaceutical R&D',
+              'Academic Medical Centers'
+            ].map((name, i) => (
+              <div key={i} className="text-slate-500 font-bold text-sm hover:text-[#060140] transition-colors cursor-pointer">
+                {name}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Metrics */}
+      <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge variant="teal" className="mb-4">
-              Who We Serve
-            </Badge>
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Built for Every Genomics Workflow</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              From research discovery to clinical diagnostics
-            </p>
+            <h2 className="text-4xl sm:text-5xl font-bold text-slate-900 mb-4">
+              Proven Performance
+            </h2>
+            <p className="text-xl text-slate-600">Validated on clinical and research datasets</p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: Microscope,
-                title: 'Research Laboratories',
-                description: 'Discovery research, biomarker identification, and population studies with scalable analysis.',
-                accent: 'cyan'
+                value: '99.5%',
+                label: 'Sensitivity',
+                desc: 'Validated on GIAB samples',
+                icon: Target,
+                color: 'cyan'
               },
               {
-                icon: Building2,
-                title: 'Clinical Diagnostics',
-                description: 'Rare disease diagnosis, cancer genomics, and pharmacogenomics with validated pipelines.',
-                accent: 'purple'
+                value: '2-4h',
+                label: 'Turnaround',
+                desc: 'FASTQ to final report',
+                icon: Zap,
+                color: 'purple'
               },
               {
-                icon: FlaskConical,
-                title: 'Pharmaceutical R&D',
-                description: 'Drug target discovery and clinical trial patient stratification with comprehensive annotation.',
-                accent: 'teal'
+                value: '100x+',
+                label: 'Coverage',
+                desc: 'Mean target depth',
+                icon: BarChart3,
+                color: 'teal'
               },
               {
-                icon: Users,
-                title: 'Individual Researchers',
-                description: 'Academic projects, thesis research, and pilot studies with affordable pricing.',
-                accent: 'cyan'
+                value: '20+',
+                label: 'Databases',
+                desc: 'Annotation sources',
+                icon: Database,
+                color: 'cyan'
               }
-            ].map((useCase, i) => {
-              const IconComponent = useCase.icon;
-              const accentColors = {
-                cyan: 'hover:border-cyan/50 group-hover:text-cyan',
-                purple: 'hover:border-purple-primary/50 group-hover:text-purple-primary',
-                teal: 'hover:border-teal/50 group-hover:text-teal'
-              };
-              return (
-                <Card
-                  key={i}
-                  className={`group border-slate-200 hover:shadow-lg transition-all duration-300 cursor-pointer ${accentColors[useCase.accent as keyof typeof accentColors]}`}
-                  onClick={() => onNavigate('usecases')}
-                >
-                  <CardContent className="p-8 text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                      <IconComponent className={`h-8 w-8 text-slate-600 ${accentColors[useCase.accent as keyof typeof accentColors]}`} />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900 mb-3">{useCase.title}</h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{useCase.description}</p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button
-              onClick={() => onNavigate('usecases')}
-              className="bg-purple-primary hover:bg-purple-light text-white"
-            >
-              Explore Use Cases
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Metrics Section - Trust Indicators */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">Platform Performance</h2>
-            <p className="text-xl text-slate-600">Validated metrics on clinical-grade datasets</p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { label: 'Coverage Depth', value: '100x+', desc: 'Mean target coverage', icon: BarChart3 },
-              { label: 'Processing Time', value: '2-4h', desc: 'FASTQ to final VCF', icon: Zap },
-              { label: 'Variant Calls', value: '~80K', desc: 'Per exome sample', icon: Database },
-              { label: 'Annotations', value: '20+', desc: 'Functional predictors', icon: Activity }
             ].map((metric, i) => {
               const IconComponent = metric.icon;
+              const colorClasses = {
+                cyan: 'text-cyan',
+                purple: 'text-[#060140]',
+                teal: 'text-teal'
+              };
               return (
-                <Card key={i} className="border-slate-200 bg-gradient-to-br from-white to-slate-50 hover:shadow-lg transition-all duration-300">
-                  <CardContent className="p-8 text-center">
-                    <IconComponent className="h-10 w-10 text-purple-primary mx-auto mb-4" />
-                    <div className="text-4xl font-bold text-purple-primary mb-2">{metric.value}</div>
-                    <div className="font-semibold text-slate-900 mb-1">{metric.label}</div>
-                    <div className="text-sm text-slate-600">{metric.desc}</div>
-                  </CardContent>
-                </Card>
+                <div key={i} className="text-center group">
+                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:bg-[#060140] transition-all duration-300">
+                    <IconComponent className={`h-8 w-8 ${colorClasses[metric.color as keyof typeof colorClasses]} group-hover:text-white transition-colors`} />
+                  </div>
+                  <div className="text-5xl font-bold text-[#060140] mb-2">{metric.value}</div>
+                  <div className="text-lg font-semibold text-slate-900 mb-1">{metric.label}</div>
+                  <div className="text-sm text-slate-600">{metric.desc}</div>
+                </div>
               );
             })}
           </div>
         </div>
       </section>
 
-      {/* CTA Section - Purple Gradient */}
-      <section className="relative py-24 bg-gradient-to-br from-purple-primary via-purple-light to-purple-dark overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-20 w-96 h-96 bg-cyan rounded-full blur-3xl"></div>
+      {/* CTA Section */}
+      <section className="relative py-32 bg-gradient-to-br from-[#060140] via-[#0a0560] to-[#030120] overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-10 right-20 w-[40rem] h-[40rem] bg-cyan rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 left-20 w-[35rem] h-[35rem] bg-purple-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1.5s' }}></div>
         </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6">
-            Ready to Transform Your Genomic Research?
+        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Badge className="mb-6 bg-cyan/20 text-cyan border-cyan/30 px-6 py-2 text-sm">
+            Get Started Today
+          </Badge>
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
+            Ready to Transform Your
+            <span className="block text-cyan mt-2">Genomic Research?</span>
           </h2>
-          <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Join leading research institutions using our clinical-grade WES pipeline.
-            Start analyzing your exome data today with our free trial.
+          <p className="text-xl text-blue-100 mb-12 max-w-3xl mx-auto leading-relaxed">
+            Join leading research institutions and clinical labs using our validated WES pipeline.
+            Start analyzing your exome data today.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
             <Button
               size="lg"
-              className="bg-cyan hover:bg-cyan-light text-white text-lg px-8 py-6 h-auto shadow-xl"
+              className="bg-cyan hover:bg-cyan-light text-white text-lg px-10 py-7 h-auto shadow-2xl hover:shadow-cyan/50 transition-all duration-300 hover:scale-105"
               onClick={onSignIn}
             >
               Start Free Trial
@@ -405,15 +414,15 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
             <Button
               size="lg"
               variant="outline"
-              className="bg-white/10 hover:bg-white/20 text-white border-white/30 text-lg px-8 py-6 h-auto backdrop-blur-sm"
-              onClick={() => onNavigate('pricing')}
+              className="bg-transparent hover:bg-white/10 text-white border-2 border-white/40 hover:border-white/60 text-lg px-10 py-7 h-auto backdrop-blur-sm"
+              onClick={() => onNavigate('contact')}
             >
-              View Pricing
+              Contact Sales
             </Button>
           </div>
 
-          <p className="text-sm text-blue-200 mt-8">
-            No credit card required • 2 free jobs per month • Cancel anytime
+          <p className="text-sm text-blue-200">
+            No credit card required • 2 free jobs per month • Enterprise plans available
           </p>
         </div>
       </section>
