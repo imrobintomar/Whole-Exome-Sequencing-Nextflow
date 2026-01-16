@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +58,7 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
         'Export ready for publication'
       ],
       icon: Microscope,
+      image: '/AccelerateGenomicDiscovery.jpg',
       color: 'cyan'
     },
     {
@@ -70,6 +72,7 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
         '2-4 hour turnaround time'
       ],
       icon: Building2,
+      image: '/Clinical-GradeVariantAnalysis.jpg',
       color: 'purple'
     },
     {
@@ -83,6 +86,7 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
         'Multi-center data aggregation'
       ],
       icon: FlaskConical,
+      image: '/DrugDevelopmentSupport.jpg',
       color: 'teal'
     }
   ];
@@ -249,8 +253,24 @@ export default function LandingPage({ onNavigate, onSignIn }: LandingPageProps) 
                           </Button>
                         </div>
                         <div className="relative group">
-                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl flex items-center justify-center overflow-hidden hover:rotate-90 transition-transform duration-600 ease-out">
-                            <IconComponent className="h-48 w-48 text-slate-300 group-hover:scale-110 transition-transform duration-600" />
+                          <div className="aspect-square bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl overflow-hidden shadow-xl">
+                            <div className="relative w-full h-full group-hover:rotate-6 transition-transform duration-600 ease-out">
+                              <Image
+                                src={solution.image}
+                                alt={solution.subtitle}
+                                fill
+                                className="object-cover group-hover:scale-110 transition-transform duration-600"
+                                priority={index === 0}
+                                unoptimized
+                              />
+                              {/* Overlay gradient on hover */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#060140]/80 via-[#060140]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-600 flex items-end p-8">
+                                <div className="text-white">
+                                  <IconComponent className="h-12 w-12 mb-3" />
+                                  <p className="text-sm font-semibold">{solution.title}</p>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                           {/* Decorative elements */}
                           <div className="absolute -top-4 -right-4 w-24 h-24 bg-cyan/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-600"></div>
