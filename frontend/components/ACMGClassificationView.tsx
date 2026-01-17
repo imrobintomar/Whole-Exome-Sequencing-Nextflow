@@ -75,7 +75,7 @@ export default function ACMGClassificationView({ jobId, sampleName }: ACMGClassi
         <CardHeader>
           <CardTitle>ACMG/AMP Classification</CardTitle>
           <CardDescription>
-            Classify variants according to 2015 ACMG/AMP guidelines
+            Classify Variants according to 2015 ACMG/AMP guidelines
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -258,7 +258,7 @@ export default function ACMGClassificationView({ jobId, sampleName }: ACMGClassi
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Position</TableHead>
+                  <TableHead>Variant</TableHead>
                   <TableHead>Gene</TableHead>
                   <TableHead>Consequence</TableHead>
                   <TableHead>Classification</TableHead>

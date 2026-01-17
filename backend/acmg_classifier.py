@@ -40,15 +40,15 @@ class ACMGEvidence:
     met: bool
     strength: ACMGStrength
     description: str
-    auto_applied: bool = True  # Was it auto-applied or manually curated?
+    auto_applied: bool = True  
 
 
 class ACMGClassifier:
     """
-    ACMG/AMP variant classification engine
+    ACMG/AMP Variant Classification Engine
 
     Pathogenic criteria:
-    - PVS1: Null variant in LOF-intolerant gene
+    - PVS1: Null Variant in LOF-intolerant gene
     - PS1-PS4: Strong evidence
     - PM1-PM6: Moderate evidence
     - PP1-PP5: Supporting evidence
@@ -100,16 +100,16 @@ class ACMGClassifier:
         Main classification function
 
         Args:
-            variant: Dictionary with variant information
+            Variant: Dictionary with variant information
                 Required fields:
                 - consequence: Effect (missense, nonsense, frameshift, etc.)
-                - gene: Gene symbol
-                - af_gnomad: gnomAD allele frequency
+                - gene: Gene Symbol
+                - af_gnomad: gnomAD Allele Frequency
                 - cadd_phred: CADD score
-                - revel_score: REVEL score
-                - sift_pred: SIFT prediction
-                - polyphen_pred: PolyPhen prediction
-                - clinvar_sig: ClinVar significance (if available)
+                - revel_score: REVEL Score
+                - sift_pred: SIFT Prediction
+                - polyphen_pred: PolyPhen Prediction
+                - clinvar_sig: ClinVar Significance (if available)
 
                 Optional fields:
                 - pli: Gene pLI score
