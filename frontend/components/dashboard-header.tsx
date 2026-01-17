@@ -174,7 +174,7 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange, sel
           >
             <Bell className="h-5 w-5" />
             {/* Notification badge */}
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 animate-pulse" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-gradient-to-r from-seagreen-500 to-mint-500 animate-pulse" />
           </Button>
 
           {/* User Menu */}
@@ -271,8 +271,8 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange, sel
                     "transition-all duration-200",
                     isActive
                       ? [
-                          "bg-gradient-to-r from-purple-500/10 to-cyan-500/10",
-                          "text-purple-600 dark:text-purple-400",
+                          "bg-gradient-to-r from-twilight-800/10 via-seagreen-500/10 to-mint-500/10",
+                          "text-twilight-800 dark:text-mint-400",
                         ]
                       : [
                           "text-muted-foreground",
@@ -283,7 +283,7 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange, sel
                   <div className={cn(
                     "flex h-10 w-10 items-center justify-center rounded-lg",
                     isActive
-                      ? "bg-gradient-to-br from-purple-500 to-cyan-500 text-white"
+                      ? "bg-gradient-to-br from-twilight-800 to-seagreen-500 text-white shadow-lg shadow-seagreen-500/25"
                       : "bg-muted"
                   )}>
                     <Icon className="h-5 w-5" />
@@ -300,7 +300,7 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange, sel
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.photoURL || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-cyan-500 text-white">
+                  <AvatarFallback className="bg-gradient-to-br from-twilight-800 to-seagreen-500 text-white">
                     {getInitials(user.displayName, user.email)}
                   </AvatarFallback>
                 </Avatar>

@@ -19,6 +19,7 @@ import {
 import { getJobs, Job } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { Button } from "./ui/button"
+import { MobileStatsCarousel, DesktopStatsGrid } from "./ui/swipeable-cards"
 
 export default function DashboardOverview() {
   const [jobs, setJobs] = useState<Job[]>([])
@@ -133,8 +134,8 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Cards - Desktop Grid */}
+      <DesktopStatsGrid>
         {loading ? (
           <>
             <SkeletonStatsCard />
@@ -178,7 +179,51 @@ export default function DashboardOverview() {
             />
           </>
         )}
-      </div>
+      </DesktopStatsGrid>
+
+      {/* Stats Cards - Mobile Swipeable Carousel */}
+      {!loading && (
+        <MobileStatsCarousel>
+          {[
+            <StatsCard
+              key="total"
+              title="Total Jobs"
+              value={stats.total}
+              icon={Dna}
+              gradient="purple"
+              trend={trends.total}
+              description="All submissions"
+            />,
+            <StatsCard
+              key="completed"
+              title="Completed"
+              value={stats.completed}
+              icon={CheckCircle2}
+              gradient="green"
+              trend={trends.completed}
+              description="Successfully finished"
+            />,
+            <StatsCard
+              key="active"
+              title="Active"
+              value={stats.running + stats.pending}
+              icon={Activity}
+              gradient="blue"
+              trend={trends.active}
+              description="Running or pending"
+            />,
+            <StatsCard
+              key="failed"
+              title="Failed"
+              value={stats.failed}
+              icon={XCircle}
+              gradient="red"
+              trend={trends.failed}
+              description="Requires attention"
+            />,
+          ]}
+        </MobileStatsCarousel>
+      )}
 
       {/* Recent Jobs */}
       <Card className="overflow-hidden border-0 shadow-lg bg-card/50 backdrop-blur-sm">

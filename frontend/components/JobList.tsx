@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { jobApi, Job } from '@/lib/api';
 import { format } from 'date-fns';
-import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3, X, Trash2 } from 'lucide-react';
+import { Download, RefreshCw, Clock, CheckCircle, XCircle, Loader, Dna, FlaskConical, Microscope, XOctagon, RotateCcw, PlayCircle, BarChart3, X, Trash2, ChevronDown, ChevronRight, FileText, Eye } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { cn } from '@/lib/utils';
 import {
   Table,
   TableBody,
@@ -32,6 +33,19 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
   const [processingActions, setProcessingActions] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [sideMenuOpen, setSideMenuOpen] = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpansion = (jobId: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+      } else {
+        next.add(jobId);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchJobs();
@@ -375,144 +389,282 @@ export default function JobList({ onJobClick, onClassifyClick, onIGVClick, onVar
                 ))}
               </div>
 
-              {/* Desktop Table View */}
+              {/* Desktop Table View with Expandable Rows */}
               <div className="hidden md:block">
                 <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Sample Name</TableHead>
-                  <TableHead>Pipeline Progress</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {jobs.map((job) => (
-                  <TableRow
-                    key={job.job_id}
-                    className="cursor-pointer hover:bg-accent/50"
-                    onClick={() => onJobClick?.(job.job_id)}
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(job.status)}
-                        <Badge variant={getStatusBadgeVariant(job.status)}>
-                          {job.status}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-medium">{job.sample_name}</TableCell>
-                    <TableCell>
-                      <PipelineProgress job={job} />
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {format(new Date(job.created_at), 'PPp')}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      {job.status === 'running' ? (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleCancel(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2 text-destructive hover:text-destructive"
-                            title="Cancel Pipeline"
-                          >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <XOctagon className="mr-1 h-3 w-3" />
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10"></TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Sample Name</TableHead>
+                      <TableHead>Pipeline Progress</TableHead>
+                      <TableHead>Submitted</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {jobs.map((job) => {
+                      const isExpanded = expandedRows.has(job.job_id);
+                      return (
+                        <>
+                          <TableRow
+                            key={job.job_id}
+                            className={cn(
+                              "cursor-pointer transition-colors",
+                              isExpanded
+                                ? "bg-seagreen-500/5 hover:bg-seagreen-500/10 border-b-0"
+                                : "hover:bg-accent/50"
                             )}
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : job.status === 'failed' ? (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleResume(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2"
-                            title="Resume Pipeline"
+                            onClick={() => toggleRowExpansion(job.job_id)}
                           >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <PlayCircle className="mr-1 h-3 w-3" />
-                            )}
-                            Resume
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleRerun(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2"
-                            title="Rerun from Scratch"
-                          >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <RotateCcw className="mr-1 h-3 w-3" />
-                            )}
-                            Rerun
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDelete(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2 text-destructive hover:text-destructive"
-                            title="Delete Job"
-                          >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="mr-1 h-3 w-3" />
-                            )}
-                            Delete
-                          </Button>
-                        </div>
-                      ) : job.status === 'completed' ? (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleRerun(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2"
-                            title="Rerun Pipeline"
-                          >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <RotateCcw className="mr-1 h-3 w-3" />
-                            )}
-                            Rerun
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDelete(job.job_id)}
-                            disabled={processingActions.has(job.job_id)}
-                            className="h-8 px-2 text-destructive hover:text-destructive"
-                            title="Delete Job"
-                          >
-                            {processingActions.has(job.job_id) ? (
-                              <Loader className="mr-1 h-3 w-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="mr-1 h-3 w-3" />
-                            )}
-                            Delete
-                          </Button>
-                        </div>
-                      ) : job.error_message ? (
-                        <p className="text-xs text-destructive">{job.error_message}</p>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">Processing...</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                            <TableCell className="w-10 pl-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleRowExpansion(job.job_id);
+                                }}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-seagreen-500" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(job.status)}
+                                <Badge variant={getStatusBadgeVariant(job.status)}>
+                                  {job.status}
+                                </Badge>
+                              </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{job.sample_name}</TableCell>
+                            <TableCell>
+                              <PipelineProgress job={job} />
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {format(new Date(job.created_at), 'PPp')}
+                            </TableCell>
+                            <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 px-3"
+                                onClick={() => onJobClick?.(job.job_id)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+
+                          {/* Expanded Row Content */}
+                          {isExpanded && (
+                            <TableRow className="bg-gradient-to-b from-seagreen-500/5 to-transparent hover:bg-seagreen-500/5">
+                              <TableCell colSpan={6} className="p-0">
+                                <div className="px-6 py-4 border-l-2 border-seagreen-500 ml-4 animate-fade-slide-up">
+                                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Job Details */}
+                                    <div className="space-y-3">
+                                      <h4 className="text-sm font-semibold text-seagreen-600 dark:text-seagreen-400 flex items-center gap-2">
+                                        <FileText className="h-4 w-4" />
+                                        Job Details
+                                      </h4>
+                                      <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                          <span className="text-muted-foreground">Job ID:</span>
+                                          <span className="font-mono text-xs">{job.job_id.substring(0, 8)}...</span>
+                                        </div>
+                                        {job.current_step && (
+                                          <div className="flex justify-between">
+                                            <span className="text-muted-foreground">Current Step:</span>
+                                            <span className="font-medium">{job.current_step}</span>
+                                          </div>
+                                        )}
+                                        {job.error_message && (
+                                          <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                            <p className="text-xs text-red-600 dark:text-red-400">{job.error_message}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Analysis Tools */}
+                                    {job.status === 'completed' && (
+                                      <div className="space-y-3">
+                                        <h4 className="text-sm font-semibold text-seagreen-600 dark:text-seagreen-400 flex items-center gap-2">
+                                          <FlaskConical className="h-4 w-4" />
+                                          Analysis Tools
+                                        </h4>
+                                        <div className="flex flex-wrap gap-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-seagreen-500/30 hover:bg-seagreen-500/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onVariantsClick?.(job.job_id);
+                                            }}
+                                          >
+                                            <BarChart3 className="h-3 w-3 mr-1" />
+                                            Variants
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-seagreen-500/30 hover:bg-seagreen-500/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onIGVClick?.(job.job_id, job.sample_name);
+                                            }}
+                                          >
+                                            <Microscope className="h-3 w-3 mr-1" />
+                                            IGV
+                                          </Button>
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-seagreen-500/30 hover:bg-seagreen-500/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onClassifyClick?.(job.job_id, job.sample_name);
+                                            }}
+                                          >
+                                            <FlaskConical className="h-3 w-3 mr-1" />
+                                            ACMG
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Actions */}
+                                    <div className="space-y-3">
+                                      <h4 className="text-sm font-semibold text-seagreen-600 dark:text-seagreen-400 flex items-center gap-2">
+                                        Actions
+                                      </h4>
+                                      <div className="flex flex-wrap gap-2">
+                                        {job.status === 'running' && (
+                                          <Button
+                                            variant="destructive"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleCancel(job.job_id);
+                                            }}
+                                            disabled={processingActions.has(job.job_id)}
+                                          >
+                                            {processingActions.has(job.job_id) ? (
+                                              <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                            ) : (
+                                              <XOctagon className="h-3 w-3 mr-1" />
+                                            )}
+                                            Cancel
+                                          </Button>
+                                        )}
+                                        {job.status === 'failed' && (
+                                          <>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleResume(job.job_id);
+                                              }}
+                                              disabled={processingActions.has(job.job_id)}
+                                            >
+                                              {processingActions.has(job.job_id) ? (
+                                                <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                              ) : (
+                                                <PlayCircle className="h-3 w-3 mr-1" />
+                                              )}
+                                              Resume
+                                            </Button>
+                                          </>
+                                        )}
+                                        {(job.status === 'completed' || job.status === 'failed') && (
+                                          <>
+                                            <Button
+                                              variant="outline"
+                                              size="sm"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleRerun(job.job_id);
+                                              }}
+                                              disabled={processingActions.has(job.job_id)}
+                                            >
+                                              {processingActions.has(job.job_id) ? (
+                                                <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                              ) : (
+                                                <RotateCcw className="h-3 w-3 mr-1" />
+                                              )}
+                                              Rerun
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="sm"
+                                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDelete(job.job_id);
+                                              }}
+                                              disabled={processingActions.has(job.job_id)}
+                                            >
+                                              {processingActions.has(job.job_id) ? (
+                                                <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                              ) : (
+                                                <Trash2 className="h-3 w-3 mr-1" />
+                                              )}
+                                              Delete
+                                            </Button>
+                                          </>
+                                        )}
+
+                                        {/* Download buttons for completed jobs */}
+                                        {job.status === 'completed' && (
+                                          <>
+                                            <div className="w-full mt-2 pt-2 border-t border-seagreen-500/20">
+                                              <span className="text-xs text-muted-foreground mb-2 block">Downloads:</span>
+                                              <div className="flex flex-wrap gap-1">
+                                                {(['bam', 'raw_vcf', 'annotated_vcf', 'filtered_tsv'] as const).map((fileType) => (
+                                                  <Button
+                                                    key={fileType}
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="h-7 px-2 text-xs"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDownload(job.job_id, fileType);
+                                                    }}
+                                                    disabled={downloadingFiles.has(`${job.job_id}-${fileType}`)}
+                                                  >
+                                                    {downloadingFiles.has(`${job.job_id}-${fileType}`) ? (
+                                                      <Loader className="h-3 w-3 mr-1 animate-spin" />
+                                                    ) : (
+                                                      <Download className="h-3 w-3 mr-1" />
+                                                    )}
+                                                    {fileType === 'raw_vcf' ? 'VCF' : fileType === 'annotated_vcf' ? 'Annotated' : fileType === 'filtered_tsv' ? 'TSV' : 'BAM'}
+                                                  </Button>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </>
           )}
