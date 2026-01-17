@@ -39,7 +39,7 @@ export default function AnalyticsDashboard() {
   }
 
   // Filter jobs by time range
-  const { start: rangeStart } = getDateRangeFromTimeRange(timeRange)
+  const { from: rangeStart } = getDateRangeFromTimeRange(timeRange)
   const filteredJobs = jobs.filter((j) => {
     const jobDate = new Date(j.created_at)
     return jobDate >= rangeStart
