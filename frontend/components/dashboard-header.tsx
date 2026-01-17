@@ -26,20 +26,31 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuLabel,       
+  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { CommandPalette, useCommandPalette } from "./command-palette"
+import { Breadcrumb, getBreadcrumbsForView } from "./ui/breadcrumb"
 
 interface DashboardHeaderProps {
   user: UserType
   onLogout: () => void
   currentView?: string
   onViewChange?: (view: string) => void
+  selectedJobName?: string
 }
 
-export function DashboardHeader({ user, onLogout, currentView, onViewChange }: DashboardHeaderProps) {
+export function DashboardHeader({ user, onLogout, currentView, onViewChange, selectedJobName }: DashboardHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const { isOpen: commandPaletteOpen, open: openCommandPalette, close: closeCommandPalette } = useCommandPalette()
+
+  // Get breadcrumb items for current view
+  const breadcrumbItems = getBreadcrumbsForView(
+    currentView || "overview",
+    selectedJobName ? [{ label: selectedJobName }] : undefined,
+    onViewChange
+  )
 
   const menuItems = [
     { id: "overview", label: "Overview", icon: Home },
@@ -109,34 +120,38 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange }: D
             )}
           </Button>
 
-          {/* Page Title */}
+          {/* Page Title & Breadcrumb */}
           <div className="hidden sm:block">
             <h1 className="text-xl font-semibold">{getViewTitle(currentView)}</h1>
+            {currentView !== "overview" && (
+              <Breadcrumb items={breadcrumbItems} className="mt-1" />
+            )}
           </div>
         </div>
 
-        {/* Center Section - Search (Desktop) */}
+        {/* Center Section - Search (Desktop) - Opens Command Palette */}
         <div className="hidden md:flex flex-1 max-w-md mx-8">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search jobs, samples..."
-              className={cn(
-                "w-full h-10 pl-10 pr-12 rounded-xl",
-                "bg-muted/50 border border-transparent",
-                "text-sm placeholder:text-muted-foreground",
-                "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50",
-                "transition-all duration-200"
-              )}
-            />
+          <button
+            onClick={openCommandPalette}
+            className="relative w-full"
+          >
+            <div className={cn(
+              "flex items-center w-full h-10 pl-10 pr-12 rounded-xl",
+              "bg-muted/50 border border-transparent",
+              "text-sm text-muted-foreground text-left",
+              "hover:bg-muted/70 hover:border-seagreen-500/20",
+              "transition-all duration-200 cursor-pointer"
+            )}>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <span>Search commands...</span>
+            </div>
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
               <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px] font-medium">
                 <Command className="h-3 w-3 inline" />
               </kbd>
               <kbd className="px-1.5 py-0.5 rounded bg-background border text-[10px] font-medium">K</kbd>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Right Section - Actions & User */}
@@ -170,9 +185,9 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange }: D
                 "hover:bg-muted/50 transition-colors duration-200",
                 "focus:outline-none focus:ring-2 focus:ring-primary/20"
               )}>
-                <Avatar className="h-8 w-8 ring-2 ring-purple-500/20">
+                <Avatar className="h-8 w-8 ring-2 ring-seagreen-500/20">
                   <AvatarImage src={user.photoURL || undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-cyan-500 text-white text-sm font-medium">
+                  <AvatarFallback className="bg-gradient-to-br from-twilight-800 to-seagreen-500 text-white text-sm font-medium">
                     {getInitials(user.displayName, user.email)}
                   </AvatarFallback>
                 </Avatar>
@@ -302,6 +317,16 @@ export function DashboardHeader({ user, onLogout, currentView, onViewChange }: D
           </div>
         </div>
       )}
+
+      {/* Command Palette */}
+      <CommandPalette
+        isOpen={commandPaletteOpen}
+        onClose={closeCommandPalette}
+        onViewChange={(view) => {
+          onViewChange?.(view)
+          closeCommandPalette()
+        }}
+      />
     </>
   )
 }

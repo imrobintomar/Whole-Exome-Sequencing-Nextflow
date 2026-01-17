@@ -17,27 +17,34 @@ interface StatsCardProps extends React.HTMLAttributes<HTMLDivElement> {
   loading?: boolean;
 }
 
+/* Brand Colors:
+ * twilight: #110B52 (deep purple)
+ * seagreen: #00A0A0 (light sea green)
+ * mint: #00E897 (tropical mint)
+ * turf: #007F4F (turf green)
+ * golden: #F2D513 (golden glow)
+ */
 const gradientMap = {
   purple: {
-    bg: 'bg-gradient-to-br from-purple-500/10 via-purple-500/5 to-transparent dark:from-purple-500/20 dark:via-purple-500/10',
-    iconBg: 'bg-gradient-to-br from-purple-500 to-purple-600',
-    iconGlow: 'shadow-[0_0_20px_rgba(139,92,246,0.4)]',
-    border: 'border-purple-500/20',
-    text: 'text-purple-600 dark:text-purple-400',
+    bg: 'bg-gradient-to-br from-twilight-800/10 via-twilight-800/5 to-transparent dark:from-twilight-800/20 dark:via-twilight-800/10',
+    iconBg: 'bg-gradient-to-br from-twilight-800 to-seagreen-500',
+    iconGlow: 'shadow-[0_0_20px_rgba(17,11,82,0.4)]',
+    border: 'border-twilight-800/20',
+    text: 'text-twilight-800 dark:text-seagreen-400',
   },
   green: {
-    bg: 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent dark:from-emerald-500/20 dark:via-emerald-500/10',
-    iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
-    iconGlow: 'shadow-[0_0_20px_rgba(16,185,129,0.4)]',
-    border: 'border-emerald-500/20',
-    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-gradient-to-br from-mint-500/10 via-mint-500/5 to-transparent dark:from-mint-500/20 dark:via-mint-500/10',
+    iconBg: 'bg-gradient-to-br from-mint-500 to-mint-800',
+    iconGlow: 'shadow-[0_0_20px_rgba(0,232,151,0.4)]',
+    border: 'border-mint-500/20',
+    text: 'text-mint-800 dark:text-mint-400',
   },
   blue: {
-    bg: 'bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent dark:from-blue-500/20 dark:via-blue-500/10',
-    iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-    iconGlow: 'shadow-[0_0_20px_rgba(59,130,246,0.4)]',
-    border: 'border-blue-500/20',
-    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-gradient-to-br from-seagreen-500/10 via-seagreen-500/5 to-transparent dark:from-seagreen-500/20 dark:via-seagreen-500/10',
+    iconBg: 'bg-gradient-to-br from-seagreen-500 to-mint-500',
+    iconGlow: 'shadow-[0_0_20px_rgba(0,160,160,0.4)]',
+    border: 'border-seagreen-500/20',
+    text: 'text-seagreen-600 dark:text-seagreen-400',
   },
   red: {
     bg: 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent dark:from-red-500/20 dark:via-red-500/10',
@@ -47,33 +54,33 @@ const gradientMap = {
     text: 'text-red-600 dark:text-red-400',
   },
   amber: {
-    bg: 'bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent dark:from-amber-500/20 dark:via-amber-500/10',
-    iconBg: 'bg-gradient-to-br from-amber-500 to-orange-500',
-    iconGlow: 'shadow-[0_0_20px_rgba(245,158,11,0.4)]',
-    border: 'border-amber-500/20',
-    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-gradient-to-br from-golden-500/10 via-golden-500/5 to-transparent dark:from-golden-500/20 dark:via-golden-500/10',
+    iconBg: 'bg-gradient-to-br from-golden-500 to-mint-800',
+    iconGlow: 'shadow-[0_0_20px_rgba(242,213,19,0.4)]',
+    border: 'border-golden-500/20',
+    text: 'text-golden-600 dark:text-golden-400',
   },
   cyan: {
-    bg: 'bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-transparent dark:from-cyan-500/20 dark:via-cyan-500/10',
-    iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500',
-    iconGlow: 'shadow-[0_0_20px_rgba(6,182,212,0.4)]',
-    border: 'border-cyan-500/20',
-    text: 'text-cyan-600 dark:text-cyan-400',
+    bg: 'bg-gradient-to-br from-seagreen-500/10 via-seagreen-500/5 to-transparent dark:from-seagreen-500/20 dark:via-seagreen-500/10',
+    iconBg: 'bg-gradient-to-br from-seagreen-500 to-twilight-800',
+    iconGlow: 'shadow-[0_0_20px_rgba(0,160,160,0.4)]',
+    border: 'border-seagreen-500/20',
+    text: 'text-seagreen-600 dark:text-seagreen-400',
   },
   teal: {
-    bg: 'bg-gradient-to-br from-teal-500/10 via-teal-500/5 to-transparent dark:from-teal-500/20 dark:via-teal-500/10',
-    iconBg: 'bg-gradient-to-br from-teal-500 to-emerald-500',
-    iconGlow: 'shadow-[0_0_20px_rgba(20,184,166,0.4)]',
-    border: 'border-teal-500/20',
-    text: 'text-teal-600 dark:text-teal-400',
+    bg: 'bg-gradient-to-br from-mint-500/10 via-mint-500/5 to-transparent dark:from-mint-500/20 dark:via-mint-500/10',
+    iconBg: 'bg-gradient-to-br from-mint-500 to-seagreen-500',
+    iconGlow: 'shadow-[0_0_20px_rgba(0,232,151,0.4)]',
+    border: 'border-mint-500/20',
+    text: 'text-mint-600 dark:text-mint-400',
   },
 };
 
 const TrendIndicator = ({ value, direction }: { value: number; direction: 'up' | 'down' | 'neutral' }) => {
   const colors = {
-    up: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30',
+    up: 'text-mint-700 dark:text-mint-400 bg-mint-100 dark:bg-mint-900/30',
     down: 'text-red-600 dark:text-red-400 bg-red-100 dark:bg-red-900/30',
-    neutral: 'text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-900/30',
+    neutral: 'text-seagreen-600 dark:text-seagreen-400 bg-seagreen-100 dark:bg-seagreen-900/30',
   };
 
   const icons = {

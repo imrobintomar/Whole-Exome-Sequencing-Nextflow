@@ -61,17 +61,17 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
               >
                 <div className={cn(
                   "flex h-14 w-14 items-center justify-center rounded-2xl",
-                  "bg-gradient-to-br from-purple-500 to-cyan-500",
-                  "shadow-lg shadow-purple-500/30",
+                  "bg-gradient-to-br from-twilight-800 via-seagreen-500 to-mint-500",
+                  "shadow-lg shadow-seagreen-500/30",
                   "transition-all duration-300",
-                  isActive && "scale-110 shadow-xl shadow-purple-500/40"
+                  isActive && "scale-110 shadow-xl shadow-mint-500/40"
                 )}>
                   <Plus className="h-6 w-6 text-white" />
                 </div>
                 <span className={cn(
                   "text-[10px] font-medium mt-1",
                   isActive
-                    ? "text-purple-600 dark:text-purple-400"
+                    ? "text-seagreen-600 dark:text-mint-400"
                     : "text-muted-foreground"
                 )}>
                   {item.label}
@@ -88,7 +88,7 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
                 "relative flex flex-col items-center justify-center",
                 "min-w-[60px] py-2 px-3 rounded-xl",
                 "transition-all duration-300 ease-out",
-                isActive && "bg-purple-500/10 dark:bg-purple-500/20"
+                isActive && "bg-seagreen-500/10 dark:bg-seagreen-500/20"
               )}
             >
               {/* Active indicator dot */}
@@ -96,7 +96,7 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
                 <span className={cn(
                   "absolute top-0 left-1/2 -translate-x-1/2",
                   "h-1 w-6 rounded-full",
-                  "bg-gradient-to-r from-purple-500 to-cyan-500",
+                  "bg-gradient-to-r from-twilight-800 via-seagreen-500 to-mint-500",
                   "animate-scale-in"
                 )} />
               )}
@@ -111,7 +111,7 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
                 <Icon className={cn(
                   "h-5 w-5 transition-colors duration-300",
                   isActive
-                    ? "text-purple-600 dark:text-purple-400"
+                    ? "text-seagreen-600 dark:text-mint-400"
                     : "text-muted-foreground"
                 )} />
 
@@ -121,7 +121,7 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
                     "absolute -top-1 -right-1",
                     "flex h-4 w-4 items-center justify-center",
                     "rounded-full text-[10px] font-bold",
-                    "bg-gradient-to-r from-purple-500 to-cyan-500 text-white",
+                    "bg-gradient-to-r from-seagreen-500 to-mint-500 text-white",
                     "animate-pulse"
                   )}>
                     {item.badge > 9 ? "9+" : item.badge}
@@ -134,7 +134,7 @@ export function MobileNav({ currentView, onViewChange }: MobileNavProps) {
                 "text-[10px] font-medium mt-0.5",
                 "transition-colors duration-300",
                 isActive
-                  ? "text-purple-600 dark:text-purple-400"
+                  ? "text-seagreen-600 dark:text-mint-400"
                   : "text-muted-foreground"
               )}>
                 {item.label}
@@ -156,9 +156,9 @@ export function MobileUploadFAB({ onClick }: { onClick: () => void }) {
         "lg:hidden fixed bottom-20 right-4 z-40",
         "flex h-14 w-14 items-center justify-center",
         "rounded-2xl",
-        "bg-gradient-to-br from-purple-500 to-cyan-500",
-        "shadow-lg shadow-purple-500/30",
-        "hover:shadow-xl hover:shadow-purple-500/40",
+        "bg-gradient-to-br from-twilight-800 via-seagreen-500 to-mint-500",
+        "shadow-lg shadow-seagreen-500/30",
+        "hover:shadow-xl hover:shadow-mint-500/40",
         "hover:scale-105",
         "active:scale-95",
         "transition-all duration-300 ease-out"
@@ -242,10 +242,10 @@ export function MobileActionSheet({
               >
                 <div className={cn(
                   "flex h-12 w-12 items-center justify-center rounded-xl",
-                  "bg-gradient-to-br from-purple-500/10 to-cyan-500/10",
-                  "border border-purple-500/20"
+                  "bg-gradient-to-br from-twilight-800/10 to-seagreen-500/10",
+                  "border border-seagreen-500/20"
                 )}>
-                  <Icon className="h-6 w-6 text-purple-500" />
+                  <Icon className="h-6 w-6 text-seagreen-500" />
                 </div>
                 <div className="flex-1 text-left">
                   <p className="font-medium">{action.label}</p>

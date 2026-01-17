@@ -4,123 +4,139 @@
 
 @layer base {
   :root {
+    /* ============================================
+       NEW BRAND COLORS
+       --deep-twilight: #110B52 (primary dark purple)
+       --light-sea-green: #00A0A0 (teal accent)
+       --tropical-mint: #00E897 (vibrant green)
+       --turf-green: #007F4F (deep green)
+       --golden-glow: #F2D513 (accent yellow)
+       ============================================ */
+
     /* Background & Foreground */
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 245 76% 18%;
 
     /* Card */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 245 76% 18%;
 
     /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
+    --popover-foreground: 245 76% 18%;
 
-    /* Primary - Vibrant Purple */
-    --primary: 0 0% 9%;
+    /* Primary - Deep Twilight Purple */
+    --primary: 245 76% 18%;
     --primary-foreground: 0 0% 98%;
-    --primary-light: 246 83% 55%;
-    --primary-dark: 246 83% 25%;
+    --primary-light: 245 76% 28%;
+    --primary-dark: 245 76% 12%;
 
     /* Secondary */
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 180 100% 31%;
+    --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 180 20% 96%;
+    --muted-foreground: 245 30% 40%;
 
-    /* Accent Colors */
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --accent-cyan: 188 94% 43%;
-    --accent-teal: 168 76% 42%;
-    --accent-coral: 15 90% 65%;
+    /* Accent Colors - Brand Palette */
+    --accent: 180 100% 31%;
+    --accent-foreground: 0 0% 98%;
+    --accent-sea-green: 180 100% 31%;
+    --accent-mint: 159 100% 45%;
+    --accent-turf: 157 100% 25%;
+    --accent-golden: 52 90% 51%;
 
     /* Destructive */
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     /* Border & Input */
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 180 20% 90%;
+    --input: 180 20% 90%;
+    --ring: 245 76% 18%;
 
     /* Radius */
     --radius: 0.5rem;
 
-    /* Status Colors */
-    --status-completed: 158 64% 52%;
-    --status-running: 217 91% 60%;
-    --status-pending: 43 96% 56%;
+    /* Status Colors - Using Brand Palette */
+    --status-completed: 159 100% 45%;
+    --status-running: 180 100% 31%;
+    --status-pending: 52 90% 51%;
     --status-failed: 0 84% 60%;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
-    --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
-    --shadow-xl: 0 20px 40px rgba(0,0,0,0.15);
+    --shadow-sm: 0 1px 2px rgba(17, 11, 82, 0.05);
+    --shadow-md: 0 4px 6px rgba(17, 11, 82, 0.07);
+    --shadow-lg: 0 10px 25px rgba(17, 11, 82, 0.1);
+    --shadow-xl: 0 20px 40px rgba(17, 11, 82, 0.15);
 
     /* Glass Effect */
-    --glass-bg: rgba(255, 255, 255, 0.8);
-    --glass-border: rgba(255, 255, 255, 0.2);
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 160, 160, 0.2);
+
+    /* Chart Colors - Brand Palette */
+    --chart-1: 245 76% 18%;
+    --chart-2: 180 100% 31%;
+    --chart-3: 159 100% 45%;
+    --chart-4: 157 100% 25%;
+    --chart-5: 52 90% 51%;
   }
 
   .dark {
-    /* Background & Foreground */
-    --background: 0 0% 3.9%;
+    /* Background - Deep Twilight inspired */
+    --background: 245 76% 8%;
     --foreground: 0 0% 98%;
 
     /* Card - Slightly elevated surface */
-    --card: 0 0% 3.9%;
+    --card: 245 60% 12%;
     --card-foreground: 0 0% 98%;
 
     /* Popover */
-    --popover: 0 0% 3.9%;
+    --popover: 245 60% 12%;
     --popover-foreground: 0 0% 98%;
 
-    /* Primary - Brighter for dark mode */
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --primary-light: 246 83% 70%;
-    --primary-dark: 246 83% 45%;
+    /* Primary - Lighter for dark mode visibility */
+    --primary: 180 100% 31%;
+    --primary-foreground: 0 0% 98%;
+    --primary-light: 180 100% 40%;
+    --primary-dark: 245 76% 18%;
 
     /* Secondary */
-    --secondary: 0 0% 14.9%;
+    --secondary: 245 50% 20%;
     --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
+    --muted: 245 50% 15%;
+    --muted-foreground: 180 30% 70%;
 
     /* Accent */
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --accent-cyan: 188 94% 50%;
-    --accent-teal: 168 76% 50%;
+    --accent: 159 100% 45%;
+    --accent-foreground: 245 76% 10%;
+    --accent-sea-green: 180 100% 35%;
+    --accent-mint: 159 100% 50%;
+    --accent-turf: 157 100% 30%;
+    --accent-golden: 52 90% 55%;
 
     /* Destructive */
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 98%;
 
     /* Border & Input */
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
+    --border: 245 50% 20%;
+    --input: 245 50% 20%;
+    --ring: 180 100% 31%;
 
     /* Glass Effect - Dark Mode */
-    --glass-bg: rgba(17, 24, 39, 0.8);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+    --glass-bg: rgba(17, 11, 82, 0.8);
+    --glass-border: rgba(0, 232, 151, 0.15);
+
+    /* Chart Colors - Dark Mode */
+    --chart-1: 180 100% 35%;
+    --chart-2: 159 100% 50%;
+    --chart-3: 52 90% 55%;
+    --chart-4: 157 100% 35%;
+    --chart-5: 245 76% 50%;
   }
 }
 
@@ -228,8 +244,8 @@
 }
 
 @keyframes glow {
-  from { box-shadow: 0 0 20px rgba(67, 24, 255, 0.2); }
-  to { box-shadow: 0 0 40px rgba(67, 24, 255, 0.4); }
+  from { box-shadow: 0 0 20px rgba(0, 160, 160, 0.2); }
+  to { box-shadow: 0 0 40px rgba(0, 232, 151, 0.4); }
 }
 
 @keyframes float {
@@ -271,35 +287,55 @@
 }
 
 /* ============================================
-   GRADIENT UTILITIES
+   GRADIENT UTILITIES - NEW BRAND PALETTE
+   Deep Twilight #110B52 → Light Sea Green #00A0A0 → Tropical Mint #00E897
    ============================================ */
 @layer utilities {
   .gradient-primary {
-    background: linear-gradient(135deg, hsl(246 83% 35%) 0%, hsl(280 70% 50%) 100%);
+    background: linear-gradient(135deg, #110B52 0%, #00A0A0 100%);
   }
 
   .gradient-success {
-    background: linear-gradient(135deg, #10B981 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, #00E897 0%, #007F4F 100%);
   }
 
   .gradient-info {
-    background: linear-gradient(135deg, #3B82F6 0%, #06b6d4 100%);
+    background: linear-gradient(135deg, #00A0A0 0%, #00E897 100%);
   }
 
   .gradient-warning {
-    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+    background: linear-gradient(135deg, #F2D513 0%, #007F4F 100%);
   }
 
   .gradient-danger {
     background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
   }
 
-  .gradient-purple-cyan {
-    background: linear-gradient(135deg, #4318FF 0%, #06b6d4 100%);
+  .gradient-brand {
+    background: linear-gradient(135deg, #110B52 0%, #00A0A0 50%, #00E897 100%);
+  }
+
+  .gradient-twilight-mint {
+    background: linear-gradient(135deg, #110B52 0%, #00E897 100%);
+  }
+
+  .gradient-sea-mint {
+    background: linear-gradient(135deg, #00A0A0 0%, #00E897 100%);
+  }
+
+  .gradient-golden {
+    background: linear-gradient(135deg, #F2D513 0%, #007F4F 100%);
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, hsl(246 83% 50%) 0%, hsl(188 94% 43%) 100%);
+    background: linear-gradient(135deg, #110B52 0%, #00A0A0 50%, #00E897 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-mint {
+    background: linear-gradient(135deg, #00A0A0 0%, #00E897 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -308,7 +344,7 @@
   .gradient-border {
     position: relative;
     background: linear-gradient(var(--background), var(--background)) padding-box,
-                linear-gradient(135deg, hsl(246 83% 50%), hsl(188 94% 43%)) border-box;
+                linear-gradient(135deg, #110B52, #00A0A0, #00E897) border-box;
     border: 2px solid transparent;
   }
 }
@@ -327,11 +363,11 @@
   }
 
   .card-glow:hover {
-    box-shadow: 0 0 40px rgba(67, 24, 255, 0.15);
+    box-shadow: 0 0 40px rgba(0, 160, 160, 0.2);
   }
 
   .dark .card-glow:hover {
-    box-shadow: 0 0 40px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 0 40px rgba(0, 232, 151, 0.3);
   }
 }
 
@@ -348,7 +384,7 @@
   }
 
   .btn-glow:hover {
-    box-shadow: 0 0 30px rgba(67, 24, 255, 0.4);
+    box-shadow: 0 0 30px rgba(0, 232, 151, 0.4);
   }
 }
 
