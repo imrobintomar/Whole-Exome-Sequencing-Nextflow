@@ -189,12 +189,31 @@ class VariantAnalyzer:
 
         # Filter for protein-altering variants
         if protein_altering_only:
-            func_col = 'ExonicFunc.refGene' if 'ExonicFunc.refGene' in df.columns else 'ExonicFunc'
-            if func_col in df.columns:
-                protein_altering = ['missense', 'nonsense', 'frameshift', 'splicing',
-                                   'stopgain', 'stoploss', 'frameshift insertion',
-                                   'frameshift deletion', 'nonframeshift insertion',
-                                   'nonframeshift deletion']
+            # Try both ExonicFunc column name variants
+            func_col = None
+            for col in ['ExonicFunc.refGeneWithVer', 'ExonicFunc.refGene', 'ExonicFunc']:
+                if col in df.columns:
+                    func_col = col
+                    break
+
+            if func_col:
+                # ANNOVAR ExonicFunc values that indicate protein-altering:
+                # - nonsynonymous SNV (amino acid change)
+                # - stopgain (premature stop codon)
+                # - stoploss (loss of stop codon)
+                # - frameshift insertion/deletion
+                # - nonframeshift insertion/deletion (in-frame indel)
+                # - splicing (affects splice sites)
+                protein_altering = [
+                    'nonsynonymous',  # matches "nonsynonymous SNV"
+                    'stopgain',
+                    'stoploss',
+                    'frameshift',     # matches both frameshift insertion and deletion
+                    'nonframeshift',  # matches nonframeshift insertion/deletion
+                    'splicing',
+                    'missense',       # alternative term
+                    'nonsense'        # alternative term
+                ]
                 df = df[df[func_col].str.contains('|'.join(protein_altering), case=False, na=False)]
 
         # Count variants per gene
@@ -265,26 +284,45 @@ class VariantAnalyzer:
             exonic_counts = self.df[self.df[exonic_func_col] != '.'][exonic_func_col].value_counts().to_dict()
 
         # Exonic sub-categories
+        # ANNOVAR ExonicFunc categories:
+        # - nonsynonymous SNV (missense - amino acid change)
+        # - synonymous SNV (silent - no amino acid change)
+        # - stopgain (nonsense - premature stop codon)
+        # - stoploss (nonsense - stop codon removed)
+        # - frameshift insertion/deletion
+        # - nonframeshift insertion/deletion (in-frame indel)
+        # - splicing (if also marked exonic)
         exonic_subcategories = {
-            'missense': 0,
-            'nonsense': 0,
-            'frameshift': 0,
-            'synonymous': 0,
-            'other': 0
+            'nonsynonymous SNV': 0,  # Missense variants
+            'synonymous SNV': 0,     # Silent variants
+            'stopgain': 0,           # Nonsense - gain stop codon
+            'stoploss': 0,           # Nonsense - lose stop codon
+            'frameshift': 0,         # Frameshift insertions/deletions
+            'nonframeshift': 0,      # In-frame insertions/deletions
+            'splicing': 0,           # Splice site variants
+            'unknown': 0             # Unknown/other variants
         }
 
         for key, count in exonic_counts.items():
-            key_lower = str(key).lower()
-            if 'missense' in key_lower or 'nonsynonymous' in key_lower:
-                exonic_subcategories['missense'] += count
-            elif 'nonsense' in key_lower or 'stopgain' in key_lower or 'stoploss' in key_lower:
-                exonic_subcategories['nonsense'] += count
-            elif 'frameshift' in key_lower:
+            key_lower = str(key).lower().strip()
+            if key_lower in ['.', '', 'nan', 'none']:
+                continue
+            elif 'nonsynonymous snv' in key_lower or key_lower == 'nonsynonymous_snv':
+                exonic_subcategories['nonsynonymous SNV'] += count
+            elif 'synonymous snv' in key_lower or key_lower == 'synonymous_snv':
+                exonic_subcategories['synonymous SNV'] += count
+            elif 'stopgain' in key_lower:
+                exonic_subcategories['stopgain'] += count
+            elif 'stoploss' in key_lower:
+                exonic_subcategories['stoploss'] += count
+            elif 'frameshift' in key_lower and 'nonframeshift' not in key_lower:
                 exonic_subcategories['frameshift'] += count
-            elif 'synonymous' in key_lower:
-                exonic_subcategories['synonymous'] += count
+            elif 'nonframeshift' in key_lower:
+                exonic_subcategories['nonframeshift'] += count
+            elif 'splicing' in key_lower:
+                exonic_subcategories['splicing'] += count
             else:
-                exonic_subcategories['other'] += count
+                exonic_subcategories['unknown'] += count
 
         return {
             'categories': categories,

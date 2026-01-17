@@ -78,11 +78,35 @@ export function VariantVisualization({ jobId, onBack }: VariantVisualizationProp
         }))
     : []
 
+  // Map exonic subcategory keys to display-friendly labels
+  // ANNOVAR ExonicFunc column values:
+  // - nonsynonymous SNV = amino acid changing (missense)
+  // - synonymous SNV = silent (no amino acid change)
+  // - stopgain = premature stop codon (nonsense)
+  // - stoploss = loss of stop codon
+  // - frameshift insertion/deletion
+  // - nonframeshift insertion/deletion = in-frame indels
+  const exonicLabelMap: Record<string, string> = {
+    'nonsynonymous SNV': 'Nonsynonymous SNV',
+    'synonymous SNV': 'Synonymous SNV',
+    'stopgain': 'Stopgain',
+    'stoploss': 'Stoploss',
+    'frameshift': 'Frameshift',
+    'nonframeshift': 'Nonframeshift',
+    'splicing': 'Splicing',
+    'unknown': 'Unknown',
+    // Legacy mappings (for older backend responses)
+    'missense': 'Nonsynonymous SNV',
+    'nonsense': 'Stopgain',
+    'synonymous': 'Synonymous SNV',
+    'other': 'Other'
+  }
+
   const exonicSubcategoriesData = functional_impact?.exonic_subcategories
     ? Object.entries(functional_impact.exonic_subcategories)
         .filter(([_, count]) => count > 0)
         .map(([category, count]) => ({
-          name: category.charAt(0).toUpperCase() + category.slice(1),
+          name: exonicLabelMap[category] || category,
           value: count as number
         }))
     : []
@@ -91,6 +115,22 @@ export function VariantVisualization({ jobId, onBack }: VariantVisualizationProp
   const CHROMOSOME_COLORS = {
     autosome: "#3b82f6", // blue
     sex: "#f59e0b" // amber
+  }
+
+  // Functional category colors (brand palette)
+  const FUNCTIONAL_COLORS = ["#00A0A0", "#8b5cf6", "#00E897", "#F2D513", "#110B52", "#007F4F", "#ec4899"]
+
+  // Exonic subcategory colors - distinct colors for clinical relevance
+  const EXONIC_COLORS: Record<string, string> = {
+    'Nonsynonymous SNV': '#ef4444',   // Red - potentially damaging
+    'Synonymous SNV': '#22c55e',       // Green - typically benign
+    'Stopgain': '#dc2626',             // Dark red - loss of function
+    'Stoploss': '#f97316',             // Orange - loss of function
+    'Frameshift': '#7c3aed',           // Purple - loss of function
+    'Nonframeshift': '#3b82f6',        // Blue - may be damaging
+    'Splicing': '#ec4899',             // Pink - may affect splicing
+    'Unknown': '#6b7280',              // Gray - unknown
+    'Other': '#9ca3af'                 // Light gray
   }
 
   const PIE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#6366f1", "#f43f5e"]
@@ -361,8 +401,8 @@ export function VariantVisualization({ jobId, onBack }: VariantVisualizationProp
         {/* Exonic Subcategories */}
         <Card>
           <CardHeader>
-            <CardTitle>Exonic Variant Types</CardTitle>
-            <CardDescription>Breakdown of coding sequence variants</CardDescription>
+            <CardTitle>Exonic Variant Types (ExonicFunc)</CardTitle>
+            <CardDescription>ANNOVAR ExonicFunc classification of coding variants</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={350}>
@@ -378,7 +418,7 @@ export function VariantVisualization({ jobId, onBack }: VariantVisualizationProp
                   dataKey="value"
                 >
                   {exonicSubcategoriesData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={EXONIC_COLORS[entry.name] || PIE_COLORS[index % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip
