@@ -10,7 +10,7 @@ interface TimeRangeSelectorProps {
   value: TimeRange
   onChange: (value: TimeRange) => void
   className?: string
-  variant?: "default" | "compact"
+  variant?: "default" | "compact" | "dropdown"
 }
 
 const timeRangeOptions: { value: TimeRange; label: string; shortLabel: string }[] = [
@@ -44,6 +44,7 @@ export function TimeRangeSelector({
 
   const selectedOption = timeRangeOptions.find(opt => opt.value === value)
 
+  // Compact variant shows all options inline as buttons
   if (variant === "compact") {
     return (
       <div className={cn("flex items-center gap-1 p-1 rounded-xl bg-muted/50", className)}>
