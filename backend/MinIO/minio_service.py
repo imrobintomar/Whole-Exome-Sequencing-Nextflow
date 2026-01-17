@@ -2,33 +2,74 @@
 MinIO Service Layer for WES Pipeline FastAPI Backend
 Provides high-level operations for object storage management
 Created: 2026-01-14
+Updated: 2026-01-17 - Integrated with centralized config
 """
 
 from minio import Minio
 from minio.error import S3Error
 from datetime import timedelta, datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, BinaryIO
 import logging
 import os
 import io
 
+# Import centralized settings
+try:
+    from config import settings
+    USE_CENTRALIZED_CONFIG = True
+except ImportError:
+    USE_CENTRALIZED_CONFIG = False
+
 logger = logging.getLogger(__name__)
 
-class MinIOConfig:
-    """MinIO configuration settings"""
-    ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-    ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "admin")
-    SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "WES2026SecureMinIO!")
-    SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
 
-    # Bucket names
-    BUCKET_RAW_DATA = "wes-raw-data"
-    BUCKET_INTERMEDIATE = "wes-intermediate"
-    BUCKET_RESULTS = "wes-results"
-    BUCKET_ARCHIVES = "wes-archives"
-    BUCKET_REFERENCE = "wes-reference"
-    BUCKET_LOGS = "wes-logs"
+class MinIOConfig:
+    """MinIO configuration settings - uses centralized config when available"""
+
+    def __init__(self):
+        if USE_CENTRALIZED_CONFIG:
+            # Use centralized settings from config.py
+            self.ENDPOINT = settings.MINIO_ENDPOINT
+            self.ACCESS_KEY = settings.MINIO_ROOT_USER
+            self.SECRET_KEY = settings.MINIO_ROOT_PASSWORD
+            self.SECURE = settings.MINIO_SECURE
+            self.ENABLED = settings.MINIO_ENABLED
+
+            # Bucket names from config
+            self.BUCKET_RAW_DATA = settings.MINIO_BUCKET_RAW_DATA
+            self.BUCKET_INTERMEDIATE = settings.MINIO_BUCKET_INTERMEDIATE
+            self.BUCKET_RESULTS = settings.MINIO_BUCKET_RESULTS
+            self.BUCKET_ARCHIVES = settings.MINIO_BUCKET_ARCHIVES
+            self.BUCKET_REFERENCE = settings.MINIO_BUCKET_REFERENCE
+            self.BUCKET_LOGS = settings.MINIO_BUCKET_LOGS
+        else:
+            # Fallback to environment variables
+            self.ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+            self.ACCESS_KEY = os.getenv("MINIO_ROOT_USER", "admin")
+            self.SECRET_KEY = os.getenv("MINIO_ROOT_PASSWORD", "WES2026SecureMinIO!")
+            self.SECURE = os.getenv("MINIO_SECURE", "false").lower() == "true"
+            self.ENABLED = os.getenv("MINIO_ENABLED", "false").lower() == "true"
+
+            # Default bucket names
+            self.BUCKET_RAW_DATA = "wes-raw-data"
+            self.BUCKET_INTERMEDIATE = "wes-intermediate"
+            self.BUCKET_RESULTS = "wes-results"
+            self.BUCKET_ARCHIVES = "wes-archives"
+            self.BUCKET_REFERENCE = "wes-reference"
+            self.BUCKET_LOGS = "wes-logs"
+
+    @property
+    def all_buckets(self) -> List[str]:
+        """Get list of all bucket names"""
+        return [
+            self.BUCKET_RAW_DATA,
+            self.BUCKET_INTERMEDIATE,
+            self.BUCKET_RESULTS,
+            self.BUCKET_ARCHIVES,
+            self.BUCKET_REFERENCE,
+            self.BUCKET_LOGS
+        ]
 
 
 class MinIOService:

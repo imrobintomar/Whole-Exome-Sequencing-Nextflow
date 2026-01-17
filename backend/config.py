@@ -46,6 +46,19 @@ class Settings(BaseSettings):
     HEALTH_MEMORY_THRESHOLD: Optional[int] = 90
     HEALTH_DISK_THRESHOLD: Optional[int] = 90
 
+    # MinIO Object Storage Configuration
+    MINIO_ENABLED: bool = False  # Feature flag to enable MinIO storage
+    MINIO_ENDPOINT: str = "localhost:9000"
+    MINIO_ROOT_USER: str = "admin"
+    MINIO_ROOT_PASSWORD: str = "WES2026SecureMinIO!"
+    MINIO_SECURE: bool = False  # Use HTTPS
+    MINIO_BUCKET_RAW_DATA: str = "wes-raw-data"
+    MINIO_BUCKET_INTERMEDIATE: str = "wes-intermediate"
+    MINIO_BUCKET_RESULTS: str = "wes-results"
+    MINIO_BUCKET_ARCHIVES: str = "wes-archives"
+    MINIO_BUCKET_REFERENCE: str = "wes-reference"
+    MINIO_BUCKET_LOGS: str = "wes-logs"
+
     class Config:
         env_file = ".env"
         case_sensitive = True
